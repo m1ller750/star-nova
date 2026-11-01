@@ -353,8 +353,8 @@ export function buildHero(opts = {}) {
   // arms
   for (const [s, n] of [[1, 'L'], [-1, 'R']]) {
     const sideC = s > 0 ? PI : 0;
-    part(SHELL(0.125, 0, PI * 2, 0, 1.2), plate, j['sh' + n], s * 0.03, 0.035, 0, 0, 0, s * 0.32, 1.28 * B, 0.85, 1.14 * B);
-    part(SHELL(0.132, 0, PI * 2, 1.0, 0.5), trim, j['sh' + n], s * 0.05, -0.03, 0, 0, 0, s * 0.48, 1.32 * B, 0.72, 1.16 * B);
+    part(SHELL(0.128, 0, PI * 2, 0, 1.42), plate, j['sh' + n], s * 0.03, 0.03, 0, 0, 0, s * 0.3, 1.22 * B, 0.92, 1.1 * B);
+
     part(G('pstripe', () => new THREE.BoxGeometry(0.012, 0.012, 0.25)), glow, j['sh' + n], s * 0.085, 0.125, 0, 0, 0, s * 0.32);
     if (dark) for (let i = 0; i < 3; i++) part(G('bspike', () => new THREE.ConeGeometry(0.022, 0.13, 6)), trim, j['sh' + n], s * (0.06 + i * 0.03), 0.13 - i * 0.02, (i - 1) * 0.06, 0, 0, -s * (0.5 + i * 0.25));
     part(LIMB(0.062 * B, 0.052 * B, 0.3, 0.38), suit, j['ua' + n]);

@@ -22,7 +22,7 @@ export const BIOMES = {
   scorched: { name: 'Scorched salt flats', colors: [0xb8a080, 0xd8c8a8, 0xf0e8d0, 0x9a8060], terrain: 'flats', amp: 12, sky: { top: 0xb0a8a0, horizon: 0xfff4e0 }, fog: [0xe8d4b8, 0.0034], sunSize: 0.06, sunI: 2.3, hemi: [0xfff0d0, 0x6a5038, 0.55], props: ['rocks', 'boulders'], surface: 'sand', heat: 0.25, ambience: 'wind' },
   haze: { name: 'Violet haze crystal fields', colors: [0x2a1a3a, 0x4a2a5a, 0x7a5a8a, 0x3a2048], terrain: 'hills', amp: 28, sky: { top: 0x2a1048, horizon: 0xb08ad8, clouds: 0.6, cloudColor: 0xd8b0ff }, fog: [0x8a6ab0, 0.007], sunSize: 0.02, sunI: 1.6, hemi: [0xc0a0ff, 0x201030, 0.8], props: ['crystals', 'rocks'], crystalColor: 0xd06aff, surface: 'rock', particles: 'spores', ambience: 'wind' },
   archipelago: { name: 'Teal archipelago', colors: [0xc8b080, 0x5a8a4a, 0x3a6a3a, 0x7a6a50], terrain: 'archipelago', amp: 26, sky: { top: 0x2a6a9a, horizon: 0xb8f0e8, clouds: 0.45 }, fog: [0x9ad8d0, 0.0035], sunSize: 0.02, sunI: 2.6, hemi: [0xc8fff0, 0x204a40, 0.8], props: ['palms', 'rocks'], surface: 'sand', water: 0, waterColor: 0x1a8a8a, ambience: 'wind' },
-  homeworld: { name: 'Keplerian bioluminescent jungle', colors: [0x1a3a2a, 0x2a6a4a, 0x4a8a5a, 0x3a5040], terrain: 'hills', amp: 22, sky: { top: 0x1a4a7a, horizon: 0x9ae8d8, clouds: 0.5 }, fog: [0x7ac8b8, 0.004], sunSize: 0.022, sunI: 2.4, hemi: [0xb0fff0, 0x1a3a2a, 0.9], props: ['jungle', 'glowplants', 'rocks'], surface: 'sand', water: -3, waterColor: 0x1a6a7a, particles: 'spores', ambience: 'wind' },
+  homeworld: { name: 'Keplerian bioluminescent jungle', colors: [0x1a3a2a, 0x2a6a4a, 0x4a8a5a, 0x3a5040], terrain: 'hills', amp: 22, sky: { top: 0x1a4a7a, horizon: 0x9ae8d8, clouds: 0.5 }, fog: [0x7ac8b8, 0.004], sunSize: 0.022, sunI: 2.1, hemi: [0x9ae8d8, 0x1a3a2a, 0.55], props: ['jungle', 'glowplants', 'rocks'], surface: 'sand', water: -3, waterColor: 0x1a6a7a, particles: 'spores', ambience: 'wind' },
   barren: { name: 'Rust-red barren plains', colors: [0x3a2018, 0x6a3a28, 0x8a5a40, 0x4a2a20], terrain: 'craters', amp: 20, sky: { top: 0x0a0204, horizon: 0x5a2014, stars: 0.6 }, fog: [0x3a1a10, 0.003], sunSize: 0.09, sunI: 2.0, hemi: [0xff9070, 0x1a0a05, 0.5], props: ['rocks', 'boulders'], surface: 'rock', ambience: 'wind' },
   frozen: { name: 'Frozen ice sheets', colors: [0x8aa8c0, 0xc8e0f0, 0xf4fbff, 0x6a88a0], terrain: 'ice', amp: 16, sky: { top: 0x0a1020, horizon: 0x6a80a8, stars: 0.5, aurora: 0.6 }, fog: [0x8aa0c0, 0.003], sunSize: 0.07, sunI: 1.4, hemi: [0xb0c8ff, 0x203040, 0.7], props: ['icespikes', 'rocks'], surface: 'snow', particles: 'snow', ambience: 'wind' },
   fortress_sand: { name: 'Sandstone citadel', colors: [0x7a3a1a, 0xb0602a, 0xd89a5a, 0x8a4a28], terrain: 'dunes', amp: 18, sky: { top: 0x3a1a2a, horizon: 0xff9a7a, clouds: 0.25, cloudColor: 0xffb0a0 }, fog: [0xd08a70, 0.0035], sunSize: 0.09, sunI: 2.2, hemi: [0xffa080, 0x401a10, 0.7], props: ['rocks', 'boulders'], surface: 'sand', particles: 'dust', ambience: 'wind' },
@@ -258,10 +258,53 @@ function cloudSea(gm, B, y = -70) {
 }
 
 function waterPlane(gm, y, color) {
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color, roughness: 0.08, metalness: 0.6, transparent: true, opacity: 0.88 }));
+  const nm = normalTexture(77, 8, 1.4); const nm2 = nm.clone(); nm.repeat.set(160, 160);
+  const mat = new THREE.MeshPhysicalMaterial({ color, roughness: 0.06, metalness: 0.15, clearcoat: 1, clearcoatRoughness: 0.04, normalMap: nm, normalScale: new THREE.Vector2(0.35, 0.35), transparent: true, opacity: 0.9, envMapIntensity: 1.6 });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000).rotateX(-Math.PI / 2), mat);
   m.position.y = y; m.receiveShadow = true; gm.scene.add(m);
   gm.world.waterY = y;
+  gm.locUpdates.push((dt) => { nm.offset.x += dt * 0.004; nm.offset.y += dt * 0.0025; });
+  void nm2;
   return m;
+}
+
+// wind-swept grass clumps (instanced, vertex sway)
+function grass(gm, colA, colB, heightAt, seed, S, avoid, count = 9000) {
+  const r = new RNG(seed + 91);
+  const blade = new THREE.BufferGeometry();
+  const pos = [], cols = [];
+  const ca = new THREE.Color(colA), cb = new THREE.Color(colB);
+  for (let k = 0; k < 5; k++) {
+    const a = (k / 5) * Math.PI + r.range(-0.2, 0.2), h = r.range(0.45, 0.9), w = 0.06;
+    const dx = Math.cos(a) * w, dz = Math.sin(a) * w, lean = r.range(-0.12, 0.12);
+    pos.push(-dx, 0, -dz, dx, 0, dz, lean, h, lean * 0.5);
+    cols.push(ca.r, ca.g, ca.b, ca.r, ca.g, ca.b, cb.r, cb.g, cb.b);
+  }
+  blade.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  blade.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+  blade.computeVertexNormals();
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, side: THREE.DoubleSide });
+  const U = { uTime: { value: 0 } };
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uTime = U.uTime;
+    sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vec4 wpos = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);\n  float sway = sin(uTime * 1.7 + wpos.x * 0.15 + wpos.z * 0.11) * 0.12 + sin(uTime * 3.1 + wpos.z * 0.3) * 0.04;\n  transformed.x += sway * position.y; transformed.z += sway * 0.6 * position.y;');
+  };
+  mat.customProgramCacheKey = () => 'grass';
+  gm.uniforms.push(U);
+  const inst = new THREE.InstancedMesh(blade, mat, count);
+  const d = new THREE.Object3D();
+  let n = 0;
+  for (let i = 0; i < count * 2 && n < count; i++) {
+    const ang = r.range(0, 6.2832), rad = Math.sqrt(r.next()) * 160, x = Math.cos(ang) * rad, z = Math.sin(ang) * rad;
+    let ok = true; for (const a of avoid) if (Math.hypot(x - a.x, z - a.z) < a.r) { ok = false; break; }
+    if (!ok) continue;
+    const y = heightAt(x, z);
+    if (gm.world.waterY > -1e8 && y < gm.world.waterY + 0.3) continue;
+    d.position.set(x, y - 0.03, z); d.rotation.set(0, r.range(0, 6.28), 0); d.scale.setScalar(r.range(1.3, 2.8)); d.updateMatrix();
+    inst.setMatrixAt(n++, d.matrix);
+  }
+  inst.count = n; inst.receiveShadow = true;
+  gm.scene.add(inst);
 }
 function lavaPlane(gm, y) {
   const mat = lavaMaterial(0xff5a1a);
@@ -497,6 +540,8 @@ export function buildLocation(gm, cfg) {
   if (cfg.fortress) avoid.push({ x: 0, z: 130, r: 75 });
   if (cfg.village) avoid.push({ x: 0, z: 50, r: 48 });
   scatter(gm, B, terr.heightAt, seed, B.terrain === 'islands' ? 440 : 600, avoid);
+  const GRASS = { homeworld: [0x0e3a2a, 0x5ad8a0], archipelago: [0x2a5a1a, 0x9ad060], haze: [0x2a1240, 0xb070e0], fortress_sand: [0x5a3a1a, 0xc89a50] };
+  if (GRASS[biomeKey]) grass(gm, GRASS[biomeKey][0], GRASS[biomeKey][1], terr.heightAt, seed, 520, avoid, biomeKey === 'fortress_sand' ? 3000 : 14000);
   gm.bounds = B.terrain === 'islands' ? 245 : 290;
   const lz = new THREE.Vector3(0, terr.heightAt(0, 0), 0);
   gm.lz = lz;
@@ -713,7 +758,7 @@ function buildFortress(gm, theme, level, c, rng) {
 
 // ------------------------------------------------------------------ Keplerian village (level 2 homeworld)
 function buildVillage(gm, c, rng) {
-  const domeM = new THREE.MeshStandardMaterial({ color: 0xd8e8f0, roughness: 0.4, metalness: 0.2, emissive: 0x0a2a2a });
+  const domeM = new THREE.MeshPhysicalMaterial({ color: 0x9fbcc4, roughness: 0.32, metalness: 0.35, clearcoat: 0.8, emissive: 0x031414 });
   const glowM = emissive(0x6affd0, 3);
   for (let i = 0; i < 9; i++) {
     const a = (i / 9) * Math.PI * 2, d = rng.range(22, 34);
