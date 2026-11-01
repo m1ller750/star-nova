@@ -258,7 +258,8 @@ export class UI {
         x = W / 2 + dx * s; y = H / 2 + dy * s;
         edge = true; rot = Math.atan2(dy, dx) + Math.PI / 2;
       }
-      const cls = `mk ${m.kind || 'objective'}${edge ? ' edge' : ''}`;
+      const kind = m.kind || 'objective';
+      const cls = `mk ${kind}${m.cls ? ' ' + m.cls : ''}${edge ? ' edge' : ''}`;
       if (el.className !== cls) el.className = cls;
       el.style.display = 'block';
       el.style.color = m.color || '#ffd23f';
@@ -267,10 +268,11 @@ export class UI {
       const op = m.opacity !== undefined ? m.opacity : 1;
       el.style.opacity = op;
       const icon = el.children[0], lab = el.children[1], sub = el.children[2], dd = el.children[3];
-      const iconTxt = m.kind === 'enemy' || m.kind === 'lock' ? '' : (m.icon || '');
+      const bare = kind === 'enemy' || kind === 'lock' || kind === 'comet';
+      const iconTxt = bare ? '' : (m.icon || '');
       if (icon.textContent !== iconTxt) icon.textContent = iconTxt;
-      // keep the HUD clean: enemies are icons only, off-screen markers are bare arrows
-      const quiet = edge || m.kind === 'enemy' || m.kind === 'lock';
+      // keep the HUD clean: enemies are bare icons, off-screen markers are bare arrows
+      const quiet = edge || bare;
       const lt = quiet ? '' : (m.label || '');
       if (lab.textContent !== lt) lab.textContent = lt;
       if (sub.textContent !== '') sub.textContent = '';
@@ -292,7 +294,7 @@ export class UI {
   }
   closeOverlays() { $('#overlay-host').innerHTML = ''; }
 
-  showTitle({ canContinue, continueLevel, onNew, onContinue, onControls, onData, onSettings }) {
+  showTitle({ canContinue, continueLevel, onNew, onContinue, onLevels, onControls, onData, onSettings }) {
     const el = $('#title-screen');
     el.classList.remove('hidden');
     el.innerHTML = `
@@ -302,12 +304,13 @@ export class UI {
       <div class="t-menu">
         ${canContinue ? `<button class="btn" data-a="cont">CONTINUE · LEVEL ${continueLevel}</button>` : ''}
         <button class="btn" data-a="new">NEW GAME</button>
+        <button class="btn" data-a="levels">SELECT LEVEL</button>
         <button class="btn" data-a="controls">CONTROLS</button>
         <button class="btn" data-a="settings">SETTINGS</button>
         <button class="btn" data-a="data">NASA DATA SOURCES</button>
       </div>
-      <div class="t-foot">Every star, planet and black hole in this game comes from <b>NASA open data</b> (NASA Exoplanet Archive · NASA Planetary Fact Sheet · NASA Chandra). Best with headphones · Chrome / Edge recommended.</div>`;
-    const map = { cont: onContinue, new: onNew, controls: onControls, data: onData, settings: onSettings };
+      <div class="t-foot">Every star, planet and black hole comes from <b>NASA open data</b>: NASA Exoplanet Archive · Planetary Fact Sheet · Chandra.<br>Best with headphones · Chrome / Edge</div>`;
+    const map = { cont: onContinue, new: onNew, levels: onLevels, controls: onControls, data: onData, settings: onSettings };
     el.querySelectorAll('.btn').forEach((b) => {
       b.addEventListener('mouseenter', () => game.audio && game.audio.ui('hover'));
       b.addEventListener('click', () => { game.audio && game.audio.resume(); game.audio && game.audio.ui(); map[b.dataset.a] && map[b.dataset.a](); });
@@ -378,13 +381,29 @@ export class UI {
     el.querySelector('[data-a=close]').addEventListener('click', () => { el.remove(); onClose && onClose(); });
   }
 
-  showPause({ level, completed, onResume, onRestart, onLevel, onQuit }) {
+  // every level is open, so the whole campaign can be reviewed in any order
+  showLevelSelect({ current = 0, onPick, onClose }) {
+    const levels = [
+      [1, 'SOLAR SYSTEM', 'Dogfights over Earth · liberate Mercury, Venus and Mars · beware the Sun'],
+      [2, 'KEPLER-90', 'Energy shield · the colonizer ring · stealth hostage rescue · 5:00 fusion charge'],
+      [3, 'TRAPPIST-1', 'Ship laser · EVA flight · three fortresses · stop the public execution'],
+      [4, 'CYGNUS X-1', 'The black-hole trap · eject in time · eye lasers · the portal'],
+      [5, 'HR 8799', 'Titan punch · ride comets into dreadnoughts · the final boss'],
+    ];
+    const el = this.overlay(`<div class="panel levels"><h2>SELECT LEVEL</h2><div class="levels-grid">
+      ${levels.map(([n, name, desc]) => `<button class="btn lvl-card${n === current ? ' current' : ''}" data-l="${n}"><span class="n">LEVEL ${n}${n === current ? ' · NOW' : ''}</span><span class="s">${name}</span><span class="d">${desc}</span></button>`).join('')}
+      </div><div class="menu-col"><button class="btn" data-a="back">BACK</button></div></div>`);
+    el.querySelectorAll('[data-l]').forEach((b) => b.addEventListener('click', () => { game.audio.ui(); el.remove(); onPick(parseInt(b.dataset.l, 10)); }));
+    el.querySelector('[data-a=back]').addEventListener('click', () => { game.audio.ui('back'); el.remove(); onClose && onClose(); });
+    return el;
+  }
+
+  showPause({ level, onResume, onRestart, onLevel, onQuit }) {
     this.closeOverlays();
-    const prev = completed.filter((n) => n < level);
     const el = this.overlay(`<div class="panel"><h2>PAUSED</h2><div class="menu-col">
       <button class="btn" data-a="resume">CONTINUE</button>
       <button class="btn" data-a="restart">RESTART THIS LEVEL</button>
-      ${level > 1 && prev.length ? '<button class="btn" data-a="prev">RETURN TO PREVIOUS LEVEL</button>' : ''}
+      <button class="btn" data-a="levels">SELECT LEVEL</button>
       <button class="btn" data-a="controls">CONTROLS</button>
       <button class="btn" data-a="settings">SETTINGS</button>
       <button class="btn danger" data-a="quit">QUIT TO TITLE</button>
@@ -392,15 +411,7 @@ export class UI {
     const act = {
       resume: onResume,
       restart: onRestart,
-      prev: () => {
-        el.style.display = 'none';
-        const names = ['', 'SOLAR SYSTEM', 'KEPLER-90', 'TRAPPIST-1', 'CYGNUS X-1', 'HR 8799'];
-        const sub = this.overlay(`<div class="panel"><h2>SELECT LEVEL</h2><div class="menu-col">
-          ${prev.map((n) => `<button class="btn level-card" data-l="${n}">LEVEL ${n}<small>${names[n]}</small></button>`).join('')}
-          <button class="btn" data-a="back">BACK</button></div></div>`);
-        sub.querySelectorAll('[data-l]').forEach((b) => b.addEventListener('click', () => { game.audio.ui(); onLevel(parseInt(b.dataset.l, 10)); }));
-        sub.querySelector('[data-a=back]').addEventListener('click', () => { game.audio.ui('back'); sub.remove(); el.style.display = ''; });
-      },
+      levels: () => { el.style.display = 'none'; this.showLevelSelect({ current: level, onPick: onLevel, onClose: () => (el.style.display = '') }); },
       controls: () => { el.style.display = 'none'; this.showControls(() => (el.style.display = '')); },
       settings: () => { el.style.display = 'none'; this.showSettings(() => (el.style.display = '')); },
       quit: onQuit,

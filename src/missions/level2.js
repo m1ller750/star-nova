@@ -146,11 +146,11 @@ export class Level2 extends Mission {
     const list = super.markers(sm);
     if (this.col && !this.colonizerDestroyed) {
       const p = this.col.center.clone().add(new THREE.Vector3(0, this.col.R * 0.5, 0));
-      list.push({ id: 'colonizer', pos: p, label: this.hostagesFreed ? 'COLONIZER · ARMED' : 'COLONIZER · HOSTAGES', icon: '!', kind: 'skull', color: '#ff2ad8', edge: !this.hostagesFreed, showDist: true });
+      list.push({ id: 'colonizer', pos: p, label: 'COLONIZER', kind: 'objective', color: '#ffd23f', edge: !this.hostagesFreed, showDist: true });
     }
     if (this.hostagesFreed && !this.hostagesHome) {
       const f = sm.env.bodyByName('KEPLER-90 f');
-      list.push({ id: 'home', pos: f.pos.clone().add(new THREE.Vector3(0, f.radius * 1.3, 0)), label: 'HOSTAGE HOMEWORLD', icon: '♦', kind: 'skull', color: '#5dff9b', edge: true, showDist: true });
+      list.push({ id: 'home', pos: f.pos.clone().add(new THREE.Vector3(0, f.radius * 1.3, 0)), label: 'HOMEWORLD', kind: 'objective', color: '#5dff9b', edge: true, showDist: true });
     }
     if (sm.mode === 'target' && sm.target && sm.target.point) list.push({ id: 'dropzone', pos: sm.target.point, label: 'DROP ZONE', kind: 'lock', color: '#5dff9b' });
     return list;
@@ -247,7 +247,7 @@ export class Level2 extends Mission {
         ['NOVA', 'I\'m on the hull. Moving inside.'],
         ['AI', 'Hostages detected in the central hangar. Patrols ahead — approach from behind and press F for a silent takedown.'],
       ]);
-      game.ui.hint('Follow the red marker · C to crouch · F behind an enemy = silent takedown', 7);
+      game.ui.hint('Follow the green marker to the hostages · C to crouch · F behind an enemy = silent takedown', 7);
     };
     gm.addInteract({ pos: L.hangar.clone().add(new THREE.Vector3(0, 0, -1)), radius: 6, hold: 2.5, label: 'FREE THE HOSTAGES (HOLD E)', enabled: () => S.step === 'infiltrate' && S.guards.every((g) => !g.alive), onDone: () => this.freeHostages(gm) });
     gm.addInteract({ pos: L.console.clone(), radius: 3.2, hold: 3, label: 'PLANT FUSION CHARGE (HOLD E)', enabled: () => S.step === 'bomb', onDone: () => this.plantBomb(gm), onHolding: () => { if (Math.random() < 0.1) game.audio.tick(); } });
@@ -507,7 +507,7 @@ export class Level2 extends Mission {
     const S = this.gmState; if (!S) return [];
     if (S.cfg.colonizer) {
       const L = gm.loc, list = [];
-      if (S.step === 'infiltrate') list.push({ id: 'hangar', pos: L.hangar.clone().add(new THREE.Vector3(0, 3, 0)), label: 'HOSTAGES', kind: 'objective', color: '#ff3b4e', edge: true, showDist: true });
+      if (S.step === 'infiltrate') list.push({ id: 'hangar', pos: L.hangar.clone().add(new THREE.Vector3(0, 3, 0)), label: 'HOSTAGES', kind: 'objective', color: '#5dff9b', edge: true, showDist: true });
       if (S.step === 'beam' || S.step === 'freed') list.push({ id: 'hangar', pos: L.hangar.clone().add(new THREE.Vector3(0, 3, 0)), label: 'HOSTAGES', kind: 'objective', color: '#5dff9b', edge: true });
       if (S.step === 'bomb') list.push({ id: 'core', pos: L.console.clone().add(new THREE.Vector3(0, 3, 0)), label: 'REACTOR CORE', kind: 'objective', color: '#ffd23f', edge: true, showDist: true });
       if (S.step === 'escape') list.push({ id: 'beam', pos: L.beam.clone().add(new THREE.Vector3(0, 3, 0)), label: 'TRACTOR BEAM', kind: 'objective', color: '#4ef2ff', edge: true, showDist: true });

@@ -30,7 +30,8 @@ class TitleBackdrop {
     const sunDir = e.pos.clone().negate().normalize();
     const side = new THREE.Vector3().crossVectors(sunDir, new THREE.Vector3(0, 1, 0)).normalize();
     const a = this.t * 0.03;
-    const camPos = e.pos.clone().addScaledVector(sunDir, -e.radius * (1.55 + Math.sin(a) * 0.05)).addScaledVector(side, e.radius * 1.2).add(new THREE.Vector3(0, e.radius * 0.28, 0));
+    // the Sun sits just behind Earth's limb: a sunrise over the night side
+    const camPos = e.pos.clone().addScaledVector(sunDir, -e.radius * (1.55 + Math.sin(a) * 0.05)).addScaledVector(side, e.radius * 0.95).add(new THREE.Vector3(0, e.radius * 0.28, 0));
     this.camera.position.copy(camPos);
     const look = e.pos.clone().addScaledVector(side, e.radius * 0.15).addScaledVector(sunDir, e.radius * 0.4);
     this.camera.lookAt(look);
@@ -82,6 +83,7 @@ export class Flow {
       continueLevel: d.reached,
       onNew: () => this.newGame(),
       onContinue: () => this.startLevel(d.reached),
+      onLevels: () => { game.ui.hideTitle(); game.ui.showLevelSelect({ onPick: (n) => this.startLevel(n), onClose: show }); },
       onControls: () => { game.ui.hideTitle(); game.ui.showControls(show); },
       onData: () => { game.ui.hideTitle(); game.ui.showData(allSystemsList(), show); },
       onSettings: () => { game.ui.hideTitle(); game.ui.showSettings(show); },
@@ -172,6 +174,7 @@ export class Flow {
     game.ui.loading(null);
     game.ui.setActions([]);
     game.ui.prompt(null);
+    game.ui.noseMark(null); game.ui.flightCursor(null); // ship-only HUD pieces
     game.input.wantLock = true; game.input.lock();
     await game.ui.fadeTo(0, 0.9);
     if (gm.onEnter) gm.onEnter();
@@ -208,6 +211,7 @@ export class Flow {
     game.ground = gm; game.mode = gm;
     this.groundBody = cfg.body || null; this.groundHow = cfg.arrival;
     game.ui.loading(null); game.ui.setActions([]); game.ui.prompt(null);
+    game.ui.noseMark(null); game.ui.flightCursor(null);
     game.input.wantLock = true; game.input.lock();
     await game.ui.fadeTo(0, 0.6);
     if (gm.onEnter) gm.onEnter();
@@ -222,7 +226,6 @@ export class Flow {
     game.input.unlock();
     game.ui.showPause({
       level: this.level,
-      completed: game.save.data.completed,
       onResume: () => this.resume(),
       onRestart: () => { game.ui.closeOverlays(); this.startLevel(this.level); },
       onLevel: (n) => { game.ui.closeOverlays(); this.startLevel(n); },

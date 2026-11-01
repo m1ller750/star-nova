@@ -12,7 +12,7 @@ function raySphereT(o, d, c, r) { _v.subVectors(o, c); const b = _v.dot(d); cons
 // ------------------------------------------------------------------ the final boss
 class Boss {
   constructor(gm, pos) {
-    this.gm = gm; this.kind = 'boss'; this.state = 'combat'; this.alive = true; this.noCount = false;
+    this.gm = gm; this.id = 'boss'; this.kind = 'boss'; this.state = 'combat'; this.alive = true; this.noCount = false;
     this.rig = buildHero({ dark: true, scale: 1.6, pods: true });
     setHeroWeapon(this.rig, null);
     this.root = this.rig.root; gm.scene.add(this.root);
@@ -211,7 +211,8 @@ class Boss {
     gm.fx.shockwave(new THREE.Vector3(this.pos.x, this.pos.y + 1, this.pos.z), 1, 30, 0xff1a3a, 0.8);
     if (p === 2) game.voice.say('BOSS', 'You fight like I used to. Hopeful. Naive. Let me show you what a century in the dark does to a hero!', { interrupt: true });
     if (p === 3) game.voice.say('BOSS', 'Enough! I will tear this planet apart with you on it!', { interrupt: true });
-    gm.mission.spawnGorillas(gm, 2);
+    // 7 enemies on the throne world in total: 4 gorilla-beasts, the boss, one more at the start of the duel and one in phase 2
+    if (p === 2) gm.mission.spawnGorillas(gm, 1);
   }
 }
 
@@ -327,11 +328,11 @@ export class Level5 extends Mission {
     ];
   }
 
+  // the throne world is the gold-ringed target once the fleet is broken; dreadnoughts carry the normal enemy chevron
+  isTargetBody(name) { return this.phase === 'approach' && name === 'HR 8799 c'; }
   markers(sm) {
     const list = [];
-    for (const e of this.dreads || []) if (e.alive) list.push({ id: 'dn' + e.id, pos: e.pos, label: 'DREADNOUGHT', icon: '!', kind: 'skull', color: '#ff3b4e', edge: true, showDist: true });
-    if (this.phase === 'approach') { const c = sm.env.bodyByName('HR 8799 c'); list.push({ id: 'throne', pos: c.pos.clone().add(new THREE.Vector3(0, c.radius * 1.2, 0)), label: 'THRONE WORLD', icon: '☠', kind: 'skull', color: '#ff1a3a', edge: true, showDist: true }); }
-    for (const c of sm.env.comets) if (!c.launched && c.pos.distanceTo(sm.playerPos()) < 3000) list.push({ id: 'cm' + c.group.id, pos: c.pos, label: 'COMET', kind: 'enemy', color: '#9fe8ff' });
+    for (const c of sm.env.comets) if (!c.launched && c.pos.distanceTo(sm.playerPos()) < 3000) list.push({ id: 'cm' + c.group.id, pos: c.pos, kind: 'comet', color: '#9fe8ff' });
     return list;
   }
 
@@ -362,7 +363,7 @@ export class Level5 extends Mission {
     game.engine.u.uTintAmt.value = 0.25; game.engine.u.uTint.value.setRGB(1.2, 0.7, 0.7);
     gm.onEnter = async () => {
       gm.hero.landPose = 1; game.audio.land(true); game.engine.shake(1.2, 0.5);
-      this.spawnGorillas(gm, 3);
+      this.spawnGorillas(gm, 4);
       game.voice.dialogue([['NOVA', 'Gorilla-beasts... the Emperor\'s pets. Bring it!']]);
       await new Promise((r) => setTimeout(r, 2500));
       S.step = 'gorillas';
@@ -418,7 +419,7 @@ export class Level5 extends Mission {
     boss.active = true;
     S.step = 'fight';
     game.audio.setMusic('boss');
-    this.spawnGorillas(gm, 2);
+    this.spawnGorillas(gm, 1);
   }
 
   updateGround(gm, dt) {

@@ -185,8 +185,8 @@ export class Level4 extends Mission {
 
   markers(sm) {
     const list = [];
-    if (this.missile && this.phase === 'trap') list.push({ id: 'missile', pos: this.missile.pos, label: 'MISSILE', kind: 'lock', color: '#ff3b4e', edge: true, showDist: true });
-    if (this.portal) list.push({ id: 'portal', pos: this.portal.pos, label: 'PORTAL', icon: '◎', kind: 'skull', color: '#b48aff', edge: true, showDist: true });
+    if (this.missile && this.phase === 'trap') list.push({ id: 'missile', pos: this.missile.pos, kind: 'enemy', cls: 'big', edge: true });
+    if (this.portal) list.push({ id: 'portal', pos: this.portal.pos, label: 'PORTAL', kind: 'objective', color: '#b48aff', edge: true, showDist: true });
     return list;
   }
 

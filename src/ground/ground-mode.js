@@ -609,9 +609,11 @@ class Hero {
     vm.add(this.vmR, this.vmL);
     this.vmWeapons = { rifle: buildRifle(), sniper: buildSniper(), sword: buildSword(), knife: buildKnife() };
     for (const k in this.vmWeapons) { const w = this.vmWeapons[k]; w.rotation.y = Math.PI; w.position.set(0.16, -0.17, -0.3); w.visible = false; vm.add(w); }
-    this.vmWeapons.sword.rotation.set(-0.9, Math.PI, 0.3); this.vmWeapons.sword.position.set(0.22, -0.28, -0.42);
     this.vmWeapons.rifle.position.set(0.17, -0.21, -0.24); this.vmWeapons.sniper.position.set(0.17, -0.2, -0.3);
-    this.vmWeapons.knife.rotation.set(-0.4, Math.PI, 0); this.vmWeapons.knife.position.set(0.2, -0.22, -0.4);
+    // melee grips: the blade (model +Z) rises from the right hand toward the centre of the view
+    const grip = (w, pos, dir, s = 1) => { w.position.copy(pos); w.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir.normalize()); w.scale.setScalar(s); };
+    grip(this.vmWeapons.sword, new THREE.Vector3(0.26, -0.24, -0.46), new THREE.Vector3(-0.22, 0.6, -0.77));
+    grip(this.vmWeapons.knife, new THREE.Vector3(0.23, -0.2, -0.42), new THREE.Vector3(-0.22, 0.42, -0.88), 1.15);
     vm.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.renderOrder = 10; } });
     vm.visible = false;
     this.gm.camera.add(vm);
@@ -623,7 +625,10 @@ class Hero {
     this.vmL.visible = this.weapon === 'fists' || gun;
     this.vmR.visible = true;
     if (gun) { this.vmR.position.set(0.16, -0.24, -0.25); this.vmL.position.set(0.05, -0.2, -0.55); }
-    else { this.vmR.position.set(0.2, -0.2, -0.35); this.vmL.position.set(-0.2, -0.2, -0.35); }
+    else if (this.weapon === 'sword' || this.weapon === 'knife') {
+      // the right hand closes around the grip (the hand sits 0.21 ahead of the forearm group)
+      this.vmR.position.copy(this.vmWeapons[this.weapon].position).add(new THREE.Vector3(-0.025, -0.012, 0.21));
+    } else { this.vmR.position.set(0.2, -0.2, -0.35); this.vmL.position.set(-0.2, -0.2, -0.35); }
   }
 
   damage(amount, fromPos = null, opts = {}) {
@@ -666,16 +671,19 @@ class Hero {
     }
     const gun = this.weapon === 'rifle' || this.weapon === 'sniper';
     this.aiming = !locked && inp.mouseDown(2) && gun;
-    // crosshair magnetism while aiming / firing the rifle or the eye lasers
-    if (!locked && ((this.weapon === 'rifle' && (this.aiming || inp.mouseDown(0))) || (this.eyeLasers && inp.down('KeyQ')))) {
-      const t = this.assistTarget(this.aiming ? 6 : 9, 150);
-      if (t) {
-        const act = Math.min(1, (Math.abs(inp.mouse.dx) + Math.abs(inp.mouse.dy)) / 20);
-        const k = (this.aiming ? 5 : 3.2) * dt * (1 - act * 0.75);
-        const wy = Math.atan2(t.dir.x, t.dir.z), wp = Math.asin(clamp(t.dir.y, -1, 1));
-        this.yaw += clamp(wrapAngle(wy - this.yaw), -1, 1) * Math.min(1, k);
-        this.pitch += (wp - this.pitch) * Math.min(1, k);
-      }
+    // aim assist: with the rifle out (or the eye lasers on) the crosshair locks onto the hostile nearest to it —
+    // a firm pull while aiming or firing, a light one otherwise; moving the mouse weakens it
+    const eyes = this.eyeLasers && inp.down('KeyQ');
+    const t = !locked && (this.weapon === 'rifle' || eyes) ? this.assistTarget(this.aiming ? 10 : 14, 180) : null;
+    this.assistActor = t ? t.actor : null;
+    if (t) {
+      const firing = inp.mouseDown(0) || eyes;
+      const act = Math.min(1, (Math.abs(inp.mouse.dx) + Math.abs(inp.mouse.dy)) / 24);
+      const rate = this.aiming ? 12 : firing ? 9 : t.ang < 0.1 ? 2.5 : 0;
+      const k = 1 - Math.exp(-rate * dt * (1 - act * 0.6));
+      const wy = Math.atan2(t.dir.x, t.dir.z), wp = Math.asin(clamp(t.dir.y, -1, 1));
+      this.yaw += wrapAngle(wy - this.yaw) * k;
+      this.pitch += (wp - this.pitch) * k;
     }
     // movement
     const fwd = _v.set(Math.sin(this.yaw), 0, Math.cos(this.yaw));
@@ -769,12 +777,14 @@ class Hero {
   updateCamera(dt) {
     const gm = this.gm, cam = gm.camera;
     const head = _v.set(this.pos.x, this.pos.y + (this.crouch ? 1.15 : 1.62), this.pos.z);
-    const fp = this.firstPerson || (this.aiming && this.weapon === 'sniper');
+    // looking through an optic (sniper scope or the long-range red dot) is always first person with a clear view
+    const optic = this.aiming && (this.weapon === 'sniper' || (this.weapon === 'rifle' && this.sight === 'reddot'));
+    const fp = this.firstPerson || optic;
     const camF = _v2.set(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch));
     if (fp) {
       cam.position.copy(head).addScaledVector(camF, 0.12);
       this.rig.root.visible = false;
-      this.vm.visible = !(this.aiming && this.weapon === 'sniper') && !gm.cinematic;
+      this.vm.visible = !optic && !gm.cinematic;
     } else {
       this.rig.root.visible = true; this.vm.visible = false;
       const right = _v3.set(-Math.cos(this.yaw), 0, Math.sin(this.yaw));
@@ -805,7 +815,8 @@ class Hero {
       this.vm.position.set(0, bob, 0);
       const a = this.attack ? this.attack.t : 0;
       this.vm.rotation.set(this.attack ? -Math.sin(a * Math.PI) * 0.8 : 0, this.attack ? Math.sin(a * Math.PI) * (this.combo % 2 ? 0.6 : -0.6) : 0, 0);
-      if (this.aiming && this.weapon === 'rifle') this.vm.position.set(-0.17, 0.045, 0.07);
+      // aiming down the standard sight: rifle pulled in, low and slightly right, so nothing covers the red dot
+      if (this.aiming && this.weapon === 'rifle') this.vm.position.set(-0.12, -0.075, -0.03);
     }
   }
 
@@ -918,20 +929,25 @@ class Hero {
     if (a.w === 'sword') { const p = _v4.copy(this.pos).addScaledVector(f, 1.4); p.y += 1.2; for (let i = 0; i < 6; i++) gm.fx.trail(p.clone().add(new THREE.Vector3(rand(-0.8, 0.8), rand(-0.4, 0.4), rand(-0.8, 0.8))), 0x4ef2ff, 0.3, 0.3); }
   }
 
-  // aim assist: nearest visible hostile close to the crosshair
+  // aim assist: nearest visible hostile close to the crosshair (the current one is preferred so the lock does not hop)
   assistTarget(maxDeg, maxDist = 160) {
     const gm = this.gm, cam = gm.camera;
     const f = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion);
     const cosMax = Math.cos((maxDeg * Math.PI) / 180);
-    let best = null, bestC = cosMax;
+    // line of sight is checked from Nova's eyes (the third-person camera sits behind her and would clip the ground)
+    const eye = new THREE.Vector3(this.pos.x, this.pos.y + (this.crouch ? 1.1 : 1.6), this.pos.z);
+    let best = null, bestS = -Infinity;
     const consider = (a, point) => {
       const to = point.clone().sub(cam.position); const L = to.length(); if (L > maxDist || L < 0.5) return;
       to.divideScalar(L);
-      const c = to.dot(f); if (c <= bestC) return;
-      if (gm.world.raycast(cam.position, to, L) < L - 0.6) return;
-      bestC = c; best = { point, actor: a, dir: to };
+      const c = to.dot(f); if (c <= cosMax) return;
+      const s = c + (a === this.assistActor ? 0.01 : 0) - L * 0.00004;
+      if (s <= bestS) return;
+      const los = _v4.subVectors(point, eye); const LL = los.length(); los.divideScalar(LL);
+      if (gm.world.raycast(eye, los, LL) < LL - 0.8) return;
+      bestS = s; best = { point, actor: a, dir: to, ang: Math.acos(Math.min(1, c)) };
     };
-    for (const e of gm.enemies) { if (!e.alive || e.kind === 'executioner') continue; consider(e, new THREE.Vector3(e.pos.x, e.pos.y + (e.height || 2) * (this.aiming ? 0.78 : 0.6), e.pos.z)); }
+    for (const e of gm.enemies) { if (!e.alive || e.kind === 'executioner' || e.active === false) continue; consider(e, new THREE.Vector3(e.pos.x, e.pos.y + (e.height || 2) * (this.aiming ? 0.78 : 0.6), e.pos.z)); }
     for (const m of gm.machines) if (m.alive) consider(m, new THREE.Vector3(m.pos.x, m.pos.y + m.height * 0.5, m.pos.z));
     return best;
   }
@@ -939,9 +955,10 @@ class Hero {
   shootRay(spread, maxD = 400) {
     const o = _v.copy(this.gm.camera.position);
     let d = _v2.set(rand(-1, 1), rand(-1, 1), 0).multiplyScalar(spread).add(_v3.set(0, 0, -1)).normalize().applyQuaternion(this.gm.camera.quaternion);
+    // shots snap onto the auto-aim target when it is near the crosshair
     if (this.weapon === 'rifle' || this.weapon === 'fists' || this.eyeAssist) {
-      const t = this.assistTarget(this.aiming ? 3.5 : 7, 170);
-      if (t) d = _v2.copy(t.point).add(new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(spread * 6)).sub(o).normalize();
+      const t = this.assistTarget(this.aiming ? 10 : 14, 180);
+      if (t) d = _v2.copy(t.point).add(new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(Math.min(0.25, spread * 5))).sub(o).normalize();
     }
     // start the ray beyond the hero in third person
     const skip = this.firstPerson ? 0 : Math.max(0, _v4.subVectors(this.pos, o).dot(d) - 0.3);
@@ -1293,7 +1310,7 @@ export class GroundMode {
     ].join(''));
     const gun = w === 'rifle' || w === 'sniper';
     if (h.aiming && w === 'sniper') ui.sight('scope', `ROUNDS ${h.sniperAmmo}/5<br>HOLD SHIFT · STEADY`);
-    else if (h.aiming && w === 'rifle' && h.sight === 'reddot') ui.sight('reddot');
+    else if (h.aiming && w === 'rifle') ui.sight(h.sight === 'reddot' ? 'reddot' : 'iron');
     else { ui.sight(null); ui.crosshair(this.cinematic ? 'none' : gun ? 'rifle' : 'melee'); }
     // prompts
     let pr = null;
@@ -1302,12 +1319,15 @@ export class GroundMode {
     if (this.promptOverride) pr = this.promptOverride;
     ui.prompt(pr ? pr.text : null, pr ? pr.key : '', pr && pr.warn);
     ui.hold(this.activeInteract && this.activeInteract.hold > 0 && this.activeInteract.progress > 0 ? this.activeInteract.progress : null);
-    // markers
+    // markers: mission objectives + one red chevron above every hostile (the last few are tracked off-screen too)
     const list = [];
     if (this.mission.groundMarkers) for (const m of this.mission.groundMarkers(this)) list.push(m);
-    for (const e of this.enemies) if (e.alive && !e.noCount && e.state === 'combat' && e.pos.distanceTo(h.pos) < 60) list.push({ id: 'ge' + e.id, pos: _v.set(e.pos.x, e.pos.y + e.height + 0.4, e.pos.z).clone(), kind: 'enemy', color: '#ff3b4e' });
     const left = this.hostiles();
-    if (left.length <= 3 && this.showRemaining) for (const e of left) list.push({ id: 'gr' + e.id, pos: _v.set(e.pos.x, e.pos.y + (e.height || 2) + 0.6, e.pos.z).clone(), kind: 'enemy', color: '#ff3b4e', edge: true, showDist: true });
+    const few = this.showRemaining && left.length <= 3;
+    for (const e of left) {
+      if (e.active === false || (!few && e.pos.distanceTo(h.pos) > 400)) continue; // the boss is unmarked until the duel starts
+      list.push({ id: 'ge' + e.id, pos: new THREE.Vector3(e.pos.x, e.pos.y + (e.height || 2) + 0.55, e.pos.z), kind: 'enemy', cls: (e === h.assistActor ? 'assist' : '') + (e instanceof Machine || e.kind === 'brute' || e.kind === 'gorilla' ? ' big' : ''), edge: few });
+    }
     ui.setMarkers(list, this.camera);
     ui.setActions(this.mission.groundActions ? this.mission.groundActions(this) : []);
   }

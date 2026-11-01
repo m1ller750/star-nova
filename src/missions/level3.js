@@ -42,17 +42,7 @@ export class Level3 extends Mission {
     for (const [name, st] of Object.entries(this.planets)) {
       if (!st.captured) continue;
       const p = this.sys.planets.find((x) => x.name === name);
-      list.push({ text: p.city ? `${name}: stop the public execution` : `${name}: free the prisoners from the fortress`, done: st.cleared, red: !st.cleared });
-    }
-    return list;
-  }
-
-  markers(sm) {
-    const list = [];
-    for (const b of sm.env.bodies) {
-      const st = this.planets[b.name]; if (!st || !st.captured) continue;
-      const def = b.def;
-      list.push({ id: 'cap_' + b.name, pos: b.pos.clone().add(new THREE.Vector3(0, b.radius * 1.25, 0)), label: st.cleared ? 'LIBERATED' : def.city ? 'EXECUTION' : 'FORTRESS', icon: st.cleared ? '✓' : '!', kind: 'skull', color: st.cleared ? '#5dff9b' : def.city ? '#ffd23f' : '#ff3b4e', edge: !st.cleared, showDist: !st.cleared });
+      list.push({ text: p.city ? `${name}: stop the public execution` : `${name}: free the prisoners from the fortress`, done: st.cleared });
     }
     return list;
   }
@@ -123,12 +113,10 @@ export class Level3 extends Mission {
     const rng = new RNG(F.cells.length * 7 + cfg.fortress.length);
     this.gmState = { cfg, fortress: true, cells: [], freed: 0, done: false, boarded: false };
     const S = this.gmState;
-    for (const p of F.courtyard) gm.addEnemy({ kind: rng.next() < 0.25 ? 'brute' : 'soldier', weapon: rng.next() < 0.3 ? 'scatter' : 'plasma', pos: p, patrol: rng.next() < 0.5 ? [p.clone(), p.clone().add(new THREE.Vector3(rng.range(-12, 12), 0, rng.range(-12, 12)))] : null, style: 3 });
-    for (const e of gm.enemies) if (e.kind === 'brute') { e.weapon = 'heavy'; e.st.weapon = 'heavy'; }
-    for (const t of [F.towers[0], F.towers[1]]) gm.addEnemy({ kind: 'sniper', weapon: 'plasma', pos: t.clone().add(new THREE.Vector3(0, 0.2, 0)), style: 3 });
-    for (const w of F.walls) gm.addEnemy({ kind: 'soldier', weapon: 'plasma', pos: w.clone(), style: 3 });
-    for (const k of F.keepGuards) gm.addEnemy({ kind: 'soldier', weapon: 'scatter', pos: k, style: 3 });
-    gm.addEnemy({ kind: 'brute', weapon: 'heavy', pos: F.keep.clone().add(new THREE.Vector3(0, 0, 5)), style: 3 });
+    // exactly 7 defenders: three in the courtyard, a sniper on a tower, two keep guards and an artillery piece
+    F.courtyard.slice(0, 3).forEach((p, i) => gm.addEnemy({ kind: i === 2 ? 'brute' : 'soldier', weapon: i === 2 ? 'heavy' : rng.next() < 0.3 ? 'scatter' : 'plasma', pos: p, patrol: i === 0 ? [p.clone(), p.clone().add(new THREE.Vector3(rng.range(-12, 12), 0, rng.range(-12, 12)))] : null, style: 3 }));
+    gm.addEnemy({ kind: 'sniper', weapon: 'plasma', pos: F.towers[0].clone().add(new THREE.Vector3(0, 0.2, 0)), style: 3 });
+    for (const k of F.keepGuards.slice(0, 2)) gm.addEnemy({ kind: 'soldier', weapon: 'scatter', pos: k, style: 3 });
     gm.addMachine({ kind: 'artillery', pos: F.center.clone().add(new THREE.Vector3(-22, 0, -30)).setY(gm.world.heightFn(F.center.x - 22, F.center.z - 30)) });
     F.cells.forEach((cell, i) => {
       const n = i % 2 ? 1 : 2;
@@ -209,7 +197,8 @@ export class Level3 extends Mission {
     };
     S.guards = [];
     for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; S.guards.push(gm.addEnemy({ kind: i % 3 === 0 ? 'brute' : 'soldier', weapon: i % 3 === 0 ? 'heavy' : 'plasma', pos: new THREE.Vector3(Math.cos(a) * 9, 1, Math.sin(a) * 9), yaw: a + Math.PI / 2, style: 3 })); }
-    for (let i = 0; i < 4; i++) gm.addEnemy({ kind: 'soldier', weapon: 'plasma', pos: new THREE.Vector3(rng.range(-60, 60), 1, rng.range(-60, 60)), patrol: [new THREE.Vector3(rng.range(-80, 80), 1, rng.range(-80, 80)), new THREE.Vector3(rng.range(-80, 80), 1, rng.range(-80, 80))], style: 3 });
+    // 6 plaza guards + 1 patrol = 7 hostiles (the executioner is scripted and not counted)
+    gm.addEnemy({ kind: 'soldier', weapon: 'plasma', pos: new THREE.Vector3(rng.range(-60, 60), 1, rng.range(-60, 60)), patrol: [new THREE.Vector3(rng.range(-80, 80), 1, rng.range(-80, 80)), new THREE.Vector3(rng.range(-80, 80), 1, rng.range(-80, 80))], style: 3 });
     // the arms dealer
     S.dealer = gm.addNPC({ look: 'trappist', pos: L.dealer.clone().add(new THREE.Vector3(-1, 0, 2.2)), seed: 77, extra: { hood: true, goggles: true } });
     S.dealer.faceHero = true; S.dealer.yaw = Math.PI;
@@ -374,10 +363,15 @@ export class Level3 extends Mission {
     if (S.city) {
       if (S.step === 'dealer') list.push({ id: 'dealer', pos: gm.loc.dealer.clone().add(new THREE.Vector3(0, 4, 0)), label: 'ARMS DEALER', kind: 'objective', color: '#ffd23f', edge: true, showDist: true });
       if (S.step === 'tower') list.push({ id: 'tower', pos: gm.loc.towerTop.clone().add(new THREE.Vector3(0, 2, 0)), label: 'VANTAGE POINT', kind: 'objective', color: '#ffd23f', edge: true, showDist: true });
-      if (['tower', 'snipe'].includes(S.step) && S.exe.alive) list.push({ id: 'exe', pos: S.exe.pos.clone().add(new THREE.Vector3(0, 4.4, 0)), label: 'EXECUTIONER', kind: 'objective', color: '#ff3b4e', edge: S.step === 'snipe', showDist: true });
+      if (['tower', 'snipe'].includes(S.step) && S.exe.alive) list.push({ id: 'exe', pos: S.exe.pos.clone().add(new THREE.Vector3(0, 3.2, 0)), kind: 'enemy', cls: 'big', edge: S.step === 'snipe' });
       if (S.step === 'rescue') list.push({ id: 'pris', pos: S.prisoner.pos.clone().add(new THREE.Vector3(0, 2.5, 0)), label: 'PRISONER', kind: 'objective', color: '#5dff9b', edge: true, showDist: true });
     }
-    if (S.fortress && !S.done) for (const c of S.cells) if (!c.open) list.push({ id: 'cell' + c.pos.x, pos: c.pos.clone().add(new THREE.Vector3(0, 3, 0)), label: 'PRISONERS', kind: 'objective', color: '#ff3b4e', edge: true, showDist: true });
+    // fortress: one marker, on the nearest closed cell (the cells sit side by side, so several labels would pile up)
+    if (S.fortress && !S.done) {
+      let near = null, nd = Infinity;
+      for (const c of S.cells) if (!c.open) { const d = c.pos.distanceTo(gm.hero.pos); if (d < nd) { nd = d; near = c; } }
+      if (near) list.push({ id: 'cell', pos: near.pos.clone().add(new THREE.Vector3(0, 3, 0)), label: 'PRISONERS', kind: 'objective', color: '#5dff9b', edge: true, showDist: true });
+    }
     if ((S.extractReady || S.calm) && S.extractPos) list.push({ id: 'extract', pos: S.extractPos.clone().add(new THREE.Vector3(0, 4, 0)), label: gm.shipModel ? 'YOUR SHIP' : 'TRACTOR BEAM', kind: 'objective', color: '#4ef2ff', edge: true, showDist: true });
     return list;
   }

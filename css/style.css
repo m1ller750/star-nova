@@ -44,7 +44,7 @@ canvas#cine { position: fixed; inset: 0; width: 100%; height: 100%; display: non
 #title-screen .t-title { font-family: var(--title); font-weight: 900; font-size: clamp(64px, 11vw, 150px); letter-spacing: 0.18em; line-height: 0.95; color: #fff; text-shadow: 0 0 30px rgba(78, 242, 255, 0.65), 0 0 80px rgba(42, 140, 255, 0.45); }
 #title-screen .t-sub { font-family: var(--title); font-weight: 700; letter-spacing: 0.5em; color: var(--cyan); font-size: clamp(14px, 1.6vw, 22px); margin: 8px 0 44px 6px; }
 #title-screen .t-menu { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
-#title-screen .t-foot { position: absolute; left: 9vw; bottom: 28px; color: var(--muted); font-size: 14px; letter-spacing: 1px; max-width: 70vw; }
+#title-screen .t-foot { position: absolute; right: 3vw; bottom: 26px; max-width: 330px; text-align: right; color: var(--muted); font-size: 12px; line-height: 1.55; letter-spacing: 0.5px; text-shadow: 0 0 6px #000, 0 1px 2px #000; }
 #title-screen .t-foot b { color: var(--cyan); }
 
 /* ---------- overlay panels ---------- */
@@ -137,11 +137,20 @@ canvas#cine { position: fixed; inset: 0; width: 100%; height: 100%; display: non
 .mk .mk-sub { font-size: 12px; color: var(--muted); letter-spacing: 1px; text-shadow: 0 0 4px #000; }
 .mk .mk-dist { font-size: 12px; opacity: 0.85; text-shadow: 0 0 4px #000; }
 .mk.edge .mk-icon { border-radius: 0; border-width: 0; width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 16px solid currentColor; background: none; box-shadow: none; transform: rotate(var(--rot)); }
-.mk.enemy .mk-icon { width: 9px; height: 9px; border-width: 0; background: #ff2a3e; box-shadow: 0 0 8px rgba(255, 30, 50, 0.95); opacity: 0.9; }
 .mk.body .mk-label { font-size: 9px; letter-spacing: 2px; opacity: 0.7; margin-top: 3px; }
-.mk.edge.enemy .mk-icon { border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 11px solid #ff2a3e; background: none; width: 0; height: 0; }
+/* worlds still held by the Klin'Tar: a gold ring around the planet name */
+.mk.body.target:not(.edge) .mk-icon { width: 18px; height: 18px; border: 2px solid currentColor; background: none; box-shadow: 0 0 10px currentColor, inset 0 0 6px currentColor; }
+.mk.body.target .mk-label { font-size: 11px; font-weight: 700; opacity: 1; }
+/* enemies: one red chevron each (the auto-aim target pulses) */
+.mk.enemy .mk-icon { width: 0; height: 0; border: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 11px solid #ff2a3e; background: none; box-shadow: none; transform: none; filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 3px rgba(255, 20, 40, 0.9)); }
+.mk.enemy.big .mk-icon { border-left-width: 9px; border-right-width: 9px; border-top-width: 14px; }
+.mk.enemy.edge .mk-icon { border: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 11px solid #ff2a3e; transform: rotate(var(--rot)); }
+.mk.enemy.assist .mk-icon { border-top-color: #ff7080; filter: drop-shadow(0 0 5px #ff2a3e) drop-shadow(0 0 1px #fff); }
+.mk.enemy.assist:not(.edge)::after { content: ''; position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -15px 0 0 -14px; border: 1.5px solid rgba(255, 70, 90, 0.9); border-radius: 50%; animation: assistring 0.9s ease-out infinite; pointer-events: none; }
+@keyframes assistring { from { transform: scale(0.55); opacity: 1; } to { transform: scale(1.2); opacity: 0; } }
+.mk.comet .mk-icon { width: 10px; height: 10px; border-width: 1.5px; border-radius: 50%; transform: none; box-shadow: 0 0 6px currentColor; }
 .mk.skull .mk-icon { width: 20px; height: 20px; border-radius: 3px; transform: none; display: flex; align-items: center; justify-content: center; font-size: 13px; }
-.mk.lock .mk-icon { width: 40px; height: 40px; border: 2px solid var(--red); transform: rotate(45deg); animation: lockspin 1s linear infinite; }
+.mk.lock .mk-icon { width: 40px; height: 40px; border: 2px solid currentColor; transform: rotate(45deg); animation: lockspin 1s linear infinite; }
 @keyframes lockspin { from { transform: rotate(45deg) scale(1.15); } to { transform: rotate(45deg) scale(0.95); } }
 
 #prompt { position: absolute; left: 50%; bottom: 23%; transform: translateX(-50%); font-family: var(--title); font-size: 16px; letter-spacing: 3px; padding: 10px 22px; background: rgba(0, 10, 20, 0.7); border: 1px solid var(--border); color: #fff; text-shadow: 0 0 8px rgba(78, 242, 255, 0.6); white-space: nowrap; }
@@ -180,12 +189,13 @@ canvas#cine { position: fixed; inset: 0; width: 100%; height: 100%; display: non
 #scope::before { content: ''; position: absolute; left: 50%; top: 50%; width: 66.8vh; height: 66.8vh; transform: translate(-50%, -50%); border-radius: 50%; box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.9); background: linear-gradient(transparent calc(50% - 1px), rgba(0, 0, 0, 0.9) calc(50% - 1px), rgba(0, 0, 0, 0.9) calc(50% + 1px), transparent calc(50% + 1px)), linear-gradient(90deg, transparent calc(50% - 1px), rgba(0, 0, 0, 0.9) calc(50% - 1px), rgba(0, 0, 0, 0.9) calc(50% + 1px), transparent calc(50% + 1px)); }
 #scope::after { content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; transform: translate(-50%, -50%); border-radius: 50%; background: #ff2030; box-shadow: 0 0 8px #ff2030; }
 #scope .scope-info { position: absolute; left: calc(50% + 36vh); top: 50%; transform: translateY(-50%); font-family: var(--title); color: var(--cyan); font-size: 13px; letter-spacing: 2px; line-height: 1.8; }
-#reddot { position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 26vh, rgba(10, 14, 18, 0.96) 26.5vh); }
-#reddot::before { content: ''; position: absolute; left: 50%; top: 50%; width: 53vh; height: 53vh; transform: translate(-50%, -50%); border-radius: 50%; border: 6px solid #1c232b; box-shadow: inset 0 0 40px rgba(60, 120, 160, 0.25); }
-#reddot::after { content: ''; position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; transform: translate(-50%, -50%); border-radius: 50%; background: #ff1a2a; box-shadow: 0 0 10px 2px rgba(255, 30, 40, 0.9); }
+/* long-range red-dot sight: the view stays clear — a thin housing ring, a soft edge vignette and the red dot */
+#reddot { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at center, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) 40vh, rgba(0, 0, 0, 0.4) 75vh); }
+#reddot::before { content: ''; position: absolute; left: 50%; top: 50%; width: 52vh; height: 52vh; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid rgba(170, 225, 255, 0.4); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), inset 0 0 24px rgba(120, 200, 255, 0.1); }
+#reddot::after { content: ''; position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; transform: translate(-50%, -50%); border-radius: 50%; background: #ff1f2c; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7), 0 0 7px 2px rgba(255, 40, 50, 0.95); }
 #ironsight { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
-#ironsight::before { content: ''; position: absolute; left: -16px; top: -2px; width: 32px; height: 4px; background: rgba(255, 255, 255, 0.0); border-left: 10px solid rgba(255, 255, 255, 0.9); border-right: 10px solid rgba(255, 255, 255, 0.9); }
-#ironsight::after { content: ''; position: absolute; left: -2px; top: -2px; width: 4px; height: 4px; background: var(--green); box-shadow: 0 0 6px var(--green); }
+#ironsight::before { content: ''; position: absolute; left: -26px; top: -1px; width: 32px; height: 2px; background: none; border-left: 10px solid rgba(255, 255, 255, 0.85); border-right: 10px solid rgba(255, 255, 255, 0.85); box-shadow: none; }
+#ironsight::after { content: ''; position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: #ff1f2c; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7), 0 0 6px 1px rgba(255, 40, 50, 0.95); }
 
 #dmgdirs { position: absolute; inset: 0; }
 .dmgdir { position: absolute; left: 50%; top: 50%; width: 140px; height: 26px; margin-left: -70px; margin-top: -13px; background: radial-gradient(ellipse at center, rgba(255, 30, 40, 0.85), rgba(255, 0, 0, 0) 70%); animation: fadeout 0.9s forwards; }
@@ -207,6 +217,13 @@ canvas#cine { position: fixed; inset: 0; width: 100%; height: 100%; display: non
 /* ---------- level select ---------- */
 .level-card { display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
 .level-card small { font-family: var(--body); letter-spacing: 1px; color: var(--muted); font-size: 13px; text-transform: none; margin-top: 3px; }
+.panel.levels { width: min(1180px, 94vw); }
+.levels-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 26px; }
+.lvl-card { min-width: 0; padding: 18px 18px 20px; display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 6px; }
+.lvl-card .n { font-size: 11px; letter-spacing: 4px; color: var(--cyan); }
+.lvl-card .s { font-size: 17px; letter-spacing: 2px; color: #fff; }
+.lvl-card .d { font-family: var(--body); font-size: 13px; letter-spacing: 0.3px; line-height: 1.4; text-transform: none; color: var(--muted); }
+.lvl-card.current { border-color: var(--cyan); box-shadow: 0 0 18px rgba(78, 242, 255, 0.3); }
 
 /* ---------- loading ---------- */
 #loading { position: absolute; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; flex-direction: column; }

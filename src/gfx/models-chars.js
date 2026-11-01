@@ -428,7 +428,7 @@ export function buildRifle(glowC = 0x4ef2ff) {
   P(RB(0.06, 0.03, 0.08, 0.01), light, 0, -0.045, -0.31);
   P(CYL(0.026, 0.026, 0.2, 14), body, 0, 0.115, 0.16, PI / 2);
   P(CYL(0.031, 0.026, 0.035, 14), body, 0, 0.115, 0.275, PI / 2);
-  P(CYL(0.021, 0.021, 0.004, 14), emissive(0xff2030, 2.5), 0, 0.115, 0.06, PI / 2);
+  P(CYL(0.021, 0.021, 0.004, 14), emissive(0x2a8aa0, 0.9), 0, 0.115, 0.06, PI / 2); // rear lens (dim, so it never blinds the first-person view)
   for (const s of [-1, 1]) P(G('rstripe', () => new THREE.BoxGeometry(0.004, 0.012, 0.36)), glow, s * 0.037, 0.0, 0.15);
   P(G('rstripe2', () => new THREE.BoxGeometry(0.08, 0.006, 0.2)), glow, 0, -0.04, 0.42);
   g.userData.muzzle = new THREE.Vector3(0, 0.012 * k, 0.83 * k);

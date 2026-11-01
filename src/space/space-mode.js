@@ -305,7 +305,7 @@ export class SpaceMode {
     this.bolts.push({ mesh: m, pos: m.position, vel: dir.clone().multiplyScalar(900), life: 3.2, dmg, color });
   }
 
-  spawnBullet(pos, dir, speed, dmg, color = 0x4ef2ff, len = 9, width = 0.35) {
+  spawnBullet(pos, dir, speed, dmg, color = 0x4ef2ff, len = 9, width = 0.35, target = null) {
     let mesh = this._bulletPool && this._bulletPool.pop();
     if (!mesh) {
       mesh = new THREE.Mesh(this._bulletGeo || (this._bulletGeo = new THREE.CapsuleGeometry(1, 1, 3, 6).rotateX(Math.PI / 2)), emissive(color, 4));
@@ -315,7 +315,9 @@ export class SpaceMode {
     mesh.position.copy(pos); mesh.quaternion.setFromUnitVectors(Z, dir);
     mesh.visible = true;
     this.scene.add(mesh);
-    this.bullets.push({ mesh, pos: mesh.position, prev: pos.clone(), vel: dir.clone().multiplyScalar(speed).add(this.playerVel()), life: 1.6, dmg });
+    // shots fired at the auto-aim target curve onto it (only when roughly aimed at it already)
+    const homing = target && target.alive && _v.subVectors(target.pos, pos).normalize().dot(dir) > 0.97 ? target : null;
+    this.bullets.push({ mesh, pos: mesh.position, prev: pos.clone(), vel: dir.clone().multiplyScalar(speed).add(this.playerVel()), life: 1.6, dmg, homing });
   }
 
   fireRocket(from, dir, target, opts = {}) {
@@ -332,6 +334,14 @@ export class SpaceMode {
     // player bullets
     for (let i = this.bullets.length - 1; i >= 0; i--) {
       const b = this.bullets[i];
+      if (b.homing && b.homing.alive) {
+        const to = _v.subVectors(b.homing.pos, b.pos);
+        if (to.dot(b.vel) > 0) {
+          const sp = b.vel.length();
+          b.vel.lerp(to.setLength(sp), Math.min(1, dt * 6)).setLength(sp);
+          b.mesh.quaternion.setFromUnitVectors(Z, _v.copy(b.vel).normalize());
+        } else b.homing = null;
+      }
       b.prev.copy(b.pos);
       b.pos.addScaledVector(b.vel, dt);
       b.life -= dt;
@@ -500,50 +510,60 @@ export class SpaceMode {
     }
     this.aimEnemy = bestE;
     this.aimPoint.copy(o).addScaledVector(d, bestE ? best : 1500);
-    // aim assist: the nearest enemy close to the crosshair gets a predictive lead point
-    let aBest = 0.982, aE = null;
-    const maxR = this.mode === 'hero' ? 2200 : 3200;
+    // aim assist: the enemy nearest the crosshair inside a wide cone; the current target is sticky
+    // until it leaves an even wider cone, so the lock does not hop between ships
+    const maxR = this.mode === 'hero' ? 3000 : 4200;
+    let aBest = -Infinity, aE = null;
     for (const e of this.enemies) {
       if (!e.alive || e.station) continue;
-      const toE = _v.subVectors(e.pos, o); const dist = toE.length(); if (dist > maxR) continue;
-      const c = toE.normalize().dot(d);
-      if (c > aBest) { aBest = c; aE = e; }
+      const toE = _v.subVectors(e.pos, o); const dist = toE.length(); if (dist > maxR * (e.huge ? 2 : 1)) continue;
+      const c = toE.multiplyScalar(1 / dist).dot(d) + (e === this.assist ? 0.035 : 0);
+      if (c < 0.962) continue; // ~16° (22° to keep a lock)
+      const score = c - (dist / maxR) * 0.012;
+      if (score > aBest) { aBest = score; aE = e; }
     }
     this.assist = aE;
     if (aE) {
+      // predictive lead point (two iterations of the intercept time)
       const speed = this.mode === 'hero' ? 1900 : 2400;
-      const t = aE.pos.distanceTo(this.playerPos()) / speed;
-      this.aimPoint.copy(aE.pos).addScaledVector(_v.subVectors(aE.vel, this.playerVel()), t);
+      const rel = _v4.subVectors(aE.vel, this.playerVel());
+      let t = aE.pos.distanceTo(this.playerPos()) / speed;
+      this.aimPoint.copy(aE.pos).addScaledVector(rel, t);
+      t = this.aimPoint.distanceTo(this.playerPos()) / speed;
+      this.aimPoint.copy(aE.pos).addScaledVector(rel, t);
       if (!this.aimEnemy) this.aimEnemy = aE;
     }
-    // lock target: closest to crosshair within cone
-    let lockBest = 0.965, lock = null;
-    for (const e of this.enemies) {
-      if (!e.alive || e.station) continue;
-      const toE = _v.subVectors(e.pos, o);
-      const dist = toE.length(); if (dist > 4500) continue;
-      const c = toE.normalize().dot(d);
-      if (c > lockBest) { lockBest = c; lock = e; }
+    // rocket lock: the assisted target, otherwise the closest to the crosshair in a wider cone
+    let lock = aE;
+    if (!lock) {
+      let lockBest = 0.94;
+      for (const e of this.enemies) {
+        if (!e.alive || e.station) continue;
+        const toE = _v.subVectors(e.pos, o);
+        const dist = toE.length(); if (dist > 5000) continue;
+        const c = toE.normalize().dot(d);
+        if (c > lockBest) { lockBest = c; lock = e; }
+      }
     }
     this.lockTarget = lock;
   }
 
-  // gently drags the crosshair onto the assisted target (stronger while firing)
+  // pulls the crosshair onto the assisted target: a firm lock while firing, a soft pull otherwise;
+  // moving the mouse weakens it so the player can always break away
   applyAimAssist(dt) {
     const e = this.assist;
     if (!e || !e.alive || (this.mode !== 'ship' && this.mode !== 'hero')) return;
     const m = game.input.mouse;
-    const mouseActivity = Math.min(1, (Math.abs(m.dx) + Math.abs(m.dy)) / 25);
-    const firing = game.input.mouseDown(0) || game.input.down('KeyF') || game.input.down('KeyQ');
-    const strength = (firing ? 2.4 : 1.1) * (1 - mouseActivity * 0.7);
+    const mouseActivity = Math.min(1, (Math.abs(m.dx) + Math.abs(m.dy)) / 30);
+    const firing = game.input.mouseDown(0) || game.input.mouseDown(2) || game.input.down('KeyF') || game.input.down('KeyQ');
+    const rate = (firing ? 9 : 3.5) * (1 - mouseActivity * 0.6);
     const want = _v3.subVectors(this.aimPoint, this.camera.position).normalize();
-    _q2.setFromUnitVectors(Z, want);
     // keep the current roll: rotate only the forward axis
     const fwd = _v2.set(0, 0, 1).applyQuaternion(this.aimQ);
     const ang = fwd.angleTo(want);
     if (ang < 1e-4) return;
     const axis = _v4.crossVectors(fwd, want).normalize();
-    _q.setFromAxisAngle(axis, Math.min(ang, strength * dt * Math.max(0.15, ang * 6)));
+    _q.setFromAxisAngle(axis, ang * (1 - Math.exp(-rate * dt)));
     this.aimQ.premultiply(_q).normalize();
   }
 
@@ -671,6 +691,8 @@ export class SpaceMode {
     this.applyGravity(p, dt);
     p.pos.addScaledVector(p.vel, dt);
     p.invuln = Math.max(0, p.invuln - dt);
+    // hull self-repair after 4 s without taking damage (full repair in ~25 s)
+    if (this.time - (p.lastHit ?? -99) > 4) p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.04 * dt);
     // visuals
     this.ship.group.position.copy(p.pos);
     this.ship.group.quaternion.copy(p.q).multiply(_q.setFromAxisAngle(Z, p.bank));
@@ -689,7 +711,7 @@ export class SpaceMode {
       const dir = _v4.subVectors(this.aimPoint, mz).normalize();
       if (dir.dot(fwd) < 0.94) dir.copy(fwd);
       dir.add(new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(0.006)).normalize();
-      this.spawnBullet(mz, dir, 2400, 5);
+      this.spawnBullet(mz, dir, 2400, 5, 0x4ef2ff, 9, 0.35, this.assist);
       this.fx.muzzle(mz, dir, 0x4ef2ff, 1.5);
       game.audio.shipGun();
     }
@@ -1005,7 +1027,7 @@ export class SpaceMode {
       rig.root.updateMatrixWorld();
       const mz = rig.weapons.rifle.localToWorld(_v4.copy(rig.weapons.rifle.userData.muzzle));
       const dir = _v3.subVectors(this.aimPoint, mz).normalize().add(new THREE.Vector3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(0.008)).normalize();
-      this.spawnBullet(mz.clone(), dir.clone(), 1900, this.level >= 5 ? 9 : 6, 0x7af8ff, 4, 0.15);
+      this.spawnBullet(mz.clone(), dir.clone(), 1900, this.level >= 5 ? 9 : 6, 0x7af8ff, 4, 0.15, this.assist);
       this.fx.muzzle(mz, dir, 0x9ff8ff, 0.5);
       game.audio.rifle();
       h.st.recoil = 1;
@@ -1251,19 +1273,23 @@ export class SpaceMode {
       if (np.z < 1) ui.noseMark((np.x * 0.5 + 0.5) * window.innerWidth, (-np.y * 0.5 + 0.5) * window.innerHeight); else ui.noseMark(null);
     } else ui.noseMark(null);
     ui.prompt(this.prompt ? this.prompt.text : null, this.prompt ? this.prompt.key : '', this.prompt && this.prompt.warn);
-    // markers
+    // markers: bodies by name (worlds still to liberate get a gold ring) and one red chevron above every enemy
     const list = [];
+    const ms = this.mission;
     for (const b of this.env.bodies) {
-      list.push({ id: 'b_' + b.name, pos: b.pos, label: b.name, sub: b.sub, kind: 'body', color: b.isBlackHole ? '#c9a0ff' : b.isStar ? '#ffe6a8' : '#d8e8ff' });
+      const target = !!(ms.isTargetBody && ms.isTargetBody(b.name));
+      const st = ms.planets && ms.planets[b.name];
+      list.push({ id: 'b_' + b.name, pos: b.pos, label: b.name, kind: 'body', cls: target ? 'target' : '', edge: target, color: target ? '#ffb43c' : st && st.captured && st.cleared ? '#5dff9b' : b.isBlackHole ? '#c9a0ff' : b.isStar ? '#ffe6a8' : '#d8e8ff' });
     }
-    if (this.mission.markers) for (const m of this.mission.markers(this)) list.push(m);
+    if (ms.markers) for (const m of ms.markers(this)) list.push(m);
     const pp = this.playerPos();
     const remaining = this.aliveEnemies((e) => !e.station);
+    const few = remaining.length <= 3;
+    const up = _v2.set(0, 1, 0).applyQuaternion(this.camera.quaternion);
     for (const e of remaining) {
-      const d = e.pos.distanceTo(pp);
-      if (d < 7000 || remaining.length <= 3) list.push({ id: 'e_' + e.id, pos: e.pos, label: e.huge ? 'DREADNOUGHT' : e.big ? 'CRUISER' : e.elite ? 'SHADOW GUARD' : '', kind: 'enemy', color: e.hitFlash > 0 ? '#ffffff' : '#ff3b4e', edge: remaining.length <= 3, showDist: remaining.length <= 3 || e.big });
+      if (!few && !e.huge && e.pos.distanceTo(pp) > 9000) continue;
+      list.push({ id: 'e_' + e.id, pos: e.pos.clone().addScaledVector(up, e.radius * 1.25 + 1.5), kind: 'enemy', cls: (e === this.assist ? 'assist' : '') + (e.big ? ' big' : ''), edge: few || !!e.huge });
     }
-    if (this.lockTarget && this.lockTarget.alive && this.mode !== 'cine') list.push({ id: 'lock', pos: this.lockTarget.pos, kind: 'lock', color: '#ff3b4e' });
     for (const m of this.markersExtra) list.push(m);
     ui.setMarkers(list, this.camera);
     const acts = this.mission.actions ? this.mission.actions(this) : [];

@@ -37,20 +37,14 @@ export class Mission {
 
   onEnemyKilled(sm, e) { if (!e.station) this.shipKills++; }
 
-  markers(sm) {
-    const list = [];
-    for (const b of sm.env.bodies) {
-      const st = this.planets[b.name];
-      if (!st || !st.captured) continue;
-      list.push({ id: 'cap_' + b.name, pos: b.pos.clone().add(new THREE.Vector3(0, b.radius * 1.25, 0)), label: '', icon: st.cleared ? '✓' : '!', kind: 'skull', color: st.cleared ? '#5dff9b' : '#ff3b4e', edge: !st.cleared, showDist: !st.cleared });
-    }
-    return list;
-  }
+  // worlds still to liberate: their name marker in space gets a gold ring (see SpaceMode.updateHUD)
+  isTargetBody(name) { const st = this.planets[name]; return !!(st && st.captured && !st.cleared); }
+  markers(sm) { return []; }
 
   baseObjectives(sm) {
     const total = this.totalShips(sm), left = this.shipsLeft(sm);
     const list = [{ text: `Destroy Klin'Tar ships (${total - left}/${total})`, done: left === 0 }];
-    for (const [name, st] of Object.entries(this.planets)) if (st.captured) list.push({ text: `Liberate ${name}`, done: st.cleared, red: !st.cleared });
+    for (const [name, st] of Object.entries(this.planets)) if (st.captured) list.push({ text: `Liberate ${name}`, done: st.cleared });
     return list;
   }
   objectives(sm) { return this.baseObjectives(sm); }
@@ -98,24 +92,25 @@ export class Mission {
     }
   }
 
+  // exactly 7 hostiles per captured planet: 5 troopers spread over the bases, an artillery piece and a hover tank;
+  // the mix gets tougher with every level (a sniper from level 2, a second brute from level 3)
   populateBases(gm, cfg) {
     const rng = new RNG(hashString(this.currentPlanet || 'x'));
-    const n = this.n;
-    const soldiers = n === 1 ? 4 : n === 2 ? 5 : 6;
-    const brutes = n === 1 ? 1 : 2;
-    gm.bases.forEach((b, bi) => {
-      for (let i = 0; i < soldiers; i++) {
-        const p = b.spawns[i % b.spawns.length].clone().add(new THREE.Vector3(rng.range(-2, 2), 0, rng.range(-2, 2)));
-        const patrol = i % 2 === 0 ? [p.clone(), p.clone().add(new THREE.Vector3(rng.range(-14, 14), 0, rng.range(-14, 14)))] : null;
-        gm.addEnemy({ kind: i === soldiers - 1 && n >= 2 ? 'sniper' : 'soldier', weapon: rng.next() < 0.3 ? 'scatter' : 'plasma', pos: p, patrol, style: this.style });
-      }
-      for (let i = 0; i < brutes; i++) gm.addEnemy({ kind: 'brute', weapon: 'heavy', pos: b.center.clone().add(new THREE.Vector3(rng.range(-6, 6), 0, rng.range(-6, 6))), style: this.style });
-      if (bi === 0 || (n >= 2 && bi === 1)) gm.addMachine({ kind: 'artillery', pos: b.center.clone().add(new THREE.Vector3(8, 0, -8)).setY(gm.world.heightFn(b.center.x + 8, b.center.z - 8)) });
+    const n = this.n, B = gm.bases;
+    if (!B.length) return;
+    const squad = n === 1 ? ['soldier', 'soldier', 'brute', 'soldier', 'soldier'] : n === 2 ? ['soldier', 'sniper', 'brute', 'soldier', 'soldier'] : ['soldier', 'sniper', 'brute', 'brute', 'soldier'];
+    squad.forEach((kind, i) => {
+      const b = B[i % B.length];
+      if (kind === 'brute') { gm.addEnemy({ kind, weapon: 'heavy', pos: b.center.clone().add(new THREE.Vector3(rng.range(-6, 6), 0, rng.range(-6, 6))), style: this.style }); return; }
+      const p = b.spawns[(i * 3) % b.spawns.length].clone().add(new THREE.Vector3(rng.range(-2, 2), 0, rng.range(-2, 2)));
+      const patrol = kind === 'soldier' && i % 2 === 0 ? [p.clone(), p.clone().add(new THREE.Vector3(rng.range(-14, 14), 0, rng.range(-14, 14)))] : null;
+      gm.addEnemy({ kind, weapon: kind === 'soldier' && rng.next() < 0.3 ? 'scatter' : 'plasma', pos: p, patrol, style: this.style });
     });
+    const art = B[B.length - 1];
+    gm.addMachine({ kind: 'artillery', pos: art.center.clone().add(new THREE.Vector3(8, 0, -8)).setY(gm.world.heightFn(art.center.x + 8, art.center.z - 8)) });
     // a hover tank patrols between the bases
-    const path = gm.bases.map((b) => b.center.clone().add(new THREE.Vector3(0, 0, -34)));
+    const path = B.map((b) => b.center.clone().add(new THREE.Vector3(0, 0, -34)));
     gm.addMachine({ kind: 'tank', pos: path[0].clone(), path });
-    if (n >= 2) gm.addMachine({ kind: 'tank', pos: path[1].clone(), path: [...path].reverse() });
     this.gmState.total = gm.hostiles().length;
   }
 
@@ -145,7 +140,6 @@ export class Mission {
   groundMarkers(gm) {
     const list = [];
     if (gm.shipModel && (this.gmState && (this.gmState.cleared || !this.gmState.cfg.captured))) list.push({ id: 'ship', pos: gm.shipModel.group.position.clone().add(new THREE.Vector3(0, 4, 0)), label: 'YOUR SHIP', kind: 'objective', color: '#4ef2ff', edge: true, showDist: true });
-    if (this.gmState && this.gmState.cfg.captured && !this.gmState.cleared && gm.bases) gm.bases.forEach((b, i) => { if (gm.enemies.some((e) => e.alive && e.pos.distanceTo(b.center) < 45)) list.push({ id: 'base' + i, pos: b.center.clone().add(new THREE.Vector3(0, 22, 0)), kind: 'enemy', color: '#ff3b4e', edge: true }); });
     return list;
   }
 
