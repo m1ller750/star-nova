@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NOVA — The Klin'Tar Invasion</title>
+  <meta name="description" content="A 3D space action game set in real NASA star systems: defend Earth from the Klin'Tar Empire as the living weapon NOVA.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23050a14'/%3E%3Cpath d='M14 40 L32 12 L50 40 L32 32 Z' fill='%234ef2ff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <canvas id="cine"></canvas>
+  <div id="ui"></div>
+  <div id="boot">
+    <div class="boot-title">NOVA</div>
+    <div class="boot-sub">LOADING SYSTEMS…</div>
+    <div class="boot-err" id="boot-err"></div>
+  </div>
+  <script>
+    window.addEventListener('error', function (e) {
+      var el = document.getElementById('boot-err');
+      if (el) el.textContent = 'Error: ' + (e.message || e.error);
+      console.error(e.error || e.message);
+    });
+  </script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
