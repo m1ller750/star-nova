@@ -4,7 +4,9 @@ A 3D browser space-action game (Three.js, WebGL) set in **real star systems from
 In 2300 the Klin'Tar Empire began conquering every inhabited world of the Milky Way. In 2500 it reached Earth — and humanity answered with a living weapon: **Nova**.
 
 ## Play
-Open `index.html` through any static web server (GitHub Pages works as-is), e.g. locally on Windows:
+**Online: https://m1ller750.github.io/nova-klintar-invasion/** (Chrome or Edge, headphones recommended)
+
+Or open `index.html` through any static web server, e.g. locally on Windows:
 
 ```
 powershell -ExecutionPolicy Bypass -File tools/serve.ps1 -Port 8080
