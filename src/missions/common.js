@@ -42,7 +42,7 @@ export class Mission {
     for (const b of sm.env.bodies) {
       const st = this.planets[b.name];
       if (!st || !st.captured) continue;
-      list.push({ id: 'cap_' + b.name, pos: b.pos.clone().add(new THREE.Vector3(0, b.radius * 1.25, 0)), label: st.cleared ? 'LIBERATED' : 'CAPTURED', icon: st.cleared ? '✓' : '!', kind: 'skull', color: st.cleared ? '#5dff9b' : '#ff3b4e', edge: !st.cleared, showDist: !st.cleared });
+      list.push({ id: 'cap_' + b.name, pos: b.pos.clone().add(new THREE.Vector3(0, b.radius * 1.25, 0)), label: '', icon: st.cleared ? '✓' : '!', kind: 'skull', color: st.cleared ? '#5dff9b' : '#ff3b4e', edge: !st.cleared, showDist: !st.cleared });
     }
     return list;
   }
@@ -145,7 +145,7 @@ export class Mission {
   groundMarkers(gm) {
     const list = [];
     if (gm.shipModel && (this.gmState && (this.gmState.cleared || !this.gmState.cfg.captured))) list.push({ id: 'ship', pos: gm.shipModel.group.position.clone().add(new THREE.Vector3(0, 4, 0)), label: 'YOUR SHIP', kind: 'objective', color: '#4ef2ff', edge: true, showDist: true });
-    if (this.gmState && this.gmState.cfg.captured && !this.gmState.cleared && gm.bases) gm.bases.forEach((b, i) => { if (gm.enemies.some((e) => e.alive && e.pos.distanceTo(b.center) < 45)) list.push({ id: 'base' + i, pos: b.center.clone().add(new THREE.Vector3(0, 22, 0)), label: 'KLIN\'TAR BASE', kind: 'objective', color: '#ff3b4e', edge: false, showDist: true }); });
+    if (this.gmState && this.gmState.cfg.captured && !this.gmState.cleared && gm.bases) gm.bases.forEach((b, i) => { if (gm.enemies.some((e) => e.alive && e.pos.distanceTo(b.center) < 45)) list.push({ id: 'base' + i, pos: b.center.clone().add(new THREE.Vector3(0, 22, 0)), kind: 'enemy', color: '#ff3b4e', edge: true }); });
     return list;
   }
 
