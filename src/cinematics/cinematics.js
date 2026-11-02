@@ -580,7 +580,7 @@ export async function playIntro() {
     if (!skipFlag) await runScene(sceneLab(), [['YEAR', ''], ['NARRATOR', 'But humanity had seen the storm coming. In secret, they created a living weapon: an artificial warrior, built to stand against the Klin\'Tar.'], ['WAIT', 1]], { minDur: 9 });
     if (!skipFlag) await runScene(sceneNova(), [
       ['NARRATOR', 'His name is Nova.'],
-      () => { const b = $('.cine-big'); b.querySelector('.a').textContent = 'STAR NOVA'; b.querySelector('.b').textContent = 'THE KLIN\'TAR INVASION'; b.style.opacity = 1; game.audio.levelComplete(); },
+      () => { const b = $('.cine-big'); b.querySelector('.a').textContent = 'STAR NOVA'; b.querySelector('.b').textContent = 'EARTH\'S LAST HOPE'; b.style.opacity = 1; game.audio.levelComplete(); },
       ['WAIT', 4],
     ], { minDur: 7, oy: 0.9, zoom: 0.02 });
   } finally {
@@ -633,7 +633,7 @@ async function earthZoomOut() {
   game.audio.levelComplete();
   await waitSkippable(5000);
   const cr = $('.cine-credits');
-  cr.innerHTML = 'STAR NOVA — THE KLIN\'TAR INVASION<br>Every star system in this game is real · Data: NASA Exoplanet Archive · NASA Planetary Fact Sheet · NASA Chandra<br>Thank you for playing';
+  cr.innerHTML = 'STAR NOVA · A GAME BY TEAM MARSBASE<br>Every star system in this game is real · Data: NASA Exoplanet Archive · NASA Planetary Fact Sheet · NASA Chandra<br>Thank you for playing';
   cr.style.opacity = 1;
   await waitSkippable(9000);
   await game.ui.fadeTo(1, 2.5);

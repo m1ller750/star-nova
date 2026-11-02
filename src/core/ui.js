@@ -315,7 +315,7 @@ export class UI {
     el.classList.remove('hidden');
     el.innerHTML = `
       <div class="t-kicker">EARTH DEFENSE INITIATIVE · YEAR 2500</div>
-      <div class="t-brand">${LOGO_SVG}<div><div class="t-title">STAR NOVA</div><div class="t-sub">THE KLIN'TAR INVASION</div></div></div>
+      <div class="t-brand">${LOGO_SVG}<div><div class="t-title">STAR NOVA</div><div class="t-sub">A NASA OPEN DATA ADVENTURE</div></div></div>
       <div class="t-menu">
         ${canContinue ? `<button class="btn" data-a="cont">CONTINUE · LEVEL ${continueLevel}</button>` : ''}
         <button class="btn" data-a="new">NEW GAME</button>
