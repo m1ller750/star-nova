@@ -1,10 +1,10 @@
-# Star Nova — The Klin'Tar Invasion
+# Star Nova
 
-**Star Nova** is a 3D browser space-action game (Three.js, WebGL) set in **real star systems from NASA open data**.
+**Star Nova** is a 3D browser space-action game (Three.js, WebGL) set in **real star systems from NASA open data**, made by team **MarsBase**.
 In 2300 the Klin'Tar Empire began conquering every inhabited world of the Milky Way. In 2500 it reached Earth — and humanity answered with a living weapon: **Nova**.
 
 ## Play
-**Online: https://m1ller750.github.io/nova-klintar-invasion/** (Chrome or Edge, headphones recommended)
+**Online: https://m1ller750.github.io/star-nova/** (Chrome or Edge, headphones recommended)
 
 Or open `index.html` through any static web server, e.g. locally on Windows:
 
