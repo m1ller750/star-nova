@@ -5,6 +5,22 @@ import { clamp, fmtTime } from './util.js';
 const $ = (sel, root = document) => root.querySelector(sel);
 const _v = new THREE.Vector3();
 
+// Star Nova emblem: a nova burst inside a HUD ring, crossed by a gold orbit with one small world on it
+export const LOGO_SVG = `<svg class="sn-logo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-label="Star Nova logo">
+  <defs>
+    <radialGradient id="sn-core"><stop offset="0" stop-color="#ffffff"/><stop offset="0.35" stop-color="#bff9ff"/><stop offset="1" stop-color="#4ef2ff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="sn-star" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#4ef2ff"/></linearGradient>
+    <linearGradient id="sn-ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4ef2ff"/><stop offset="1" stop-color="#2a6bff"/></linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="88" fill="#06101e" fill-opacity="0.6" stroke="url(#sn-ring)" stroke-width="4"/>
+  <circle cx="100" cy="100" r="76" fill="none" stroke="#4ef2ff" stroke-opacity="0.35" stroke-width="1.5" stroke-dasharray="4 7"/>
+  <ellipse cx="100" cy="100" rx="96" ry="30" fill="none" stroke="#ffb43c" stroke-width="3.5" transform="rotate(-24 100 100)"/>
+  <circle cx="100" cy="100" r="48" fill="url(#sn-core)"/>
+  <path d="M100 20 C104 82 118 96 180 100 C118 104 104 118 100 180 C96 118 82 104 20 100 C82 96 96 82 100 20 Z" fill="url(#sn-star)"/>
+  <path d="M100 58 C102 92 108 98 142 100 C108 102 102 108 100 142 C98 108 92 102 58 100 C92 98 98 92 100 58 Z" fill="#ffffff" opacity="0.85" transform="rotate(45 100 100)"/>
+  <circle cx="159" cy="52.5" r="8" fill="#ffb43c"/>
+</svg>`;
+
 export class UI {
   constructor() {
     this.root = document.getElementById('ui');
@@ -299,8 +315,7 @@ export class UI {
     el.classList.remove('hidden');
     el.innerHTML = `
       <div class="t-kicker">EARTH DEFENSE INITIATIVE · YEAR 2500</div>
-      <div class="t-title">NOVA</div>
-      <div class="t-sub">THE KLIN'TAR INVASION</div>
+      <div class="t-brand">${LOGO_SVG}<div><div class="t-title">STAR NOVA</div><div class="t-sub">THE KLIN'TAR INVASION</div></div></div>
       <div class="t-menu">
         ${canContinue ? `<button class="btn" data-a="cont">CONTINUE · LEVEL ${continueLevel}</button>` : ''}
         <button class="btn" data-a="new">NEW GAME</button>
