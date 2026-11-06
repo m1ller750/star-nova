@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Star Nova</title>
+  <meta name="description" content="Star Nova: a 3D space action game set in real NASA star systems. Defend Earth from the Klin'Tar Empire as the living weapon Nova.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='92' fill='%23060f1c' stroke='%234ef2ff' stroke-width='8'/%3E%3Cellipse cx='100' cy='100' rx='92' ry='30' fill='none' stroke='%23ffb43c' stroke-width='9' transform='rotate(-24 100 100)'/%3E%3Cpath d='M100 14 C105 82 118 95 186 100 C118 105 105 118 100 186 C95 118 82 105 14 100 C82 95 95 82 100 14 Z' fill='%23dffcff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <canvas id="cine"></canvas>
+  <div id="ui"></div>
+  <div id="boot">
+    <div class="boot-title">STAR NOVA</div>
+    <div class="boot-sub">LOADING SYSTEMS…</div>
+    <div class="boot-err" id="boot-err"></div>
+  </div>
+  <script>
+    window.addEventListener('error', function (e) {
+      var el = document.getElementById('boot-err');
+      if (el) el.textContent = 'Error: ' + (e.message || e.error);
+      console.error(e.error || e.message);
+    });
+  </script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
