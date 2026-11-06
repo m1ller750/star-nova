@@ -36,11 +36,11 @@
       var canvas = document.querySelector("#unity-canvas");
       var loader = document.querySelector("#sn-loader");
       var fill = document.querySelector("#sn-fill");
-      var status = document.querySelector("#sn-status");
+      var statusEl = document.querySelector("#sn-status");
       function fail(message) {
         var e = document.querySelector("#sn-error");
         e.textContent = message; e.style.display = "block";
-        status.textContent = "";
+        statusEl.textContent = "";
       }
       var config = {
         arguments: [],
@@ -61,7 +61,7 @@
       script.onload = function () {
         createUnityInstance(canvas, config, function (progress) {
           fill.style.width = (100 * progress) + "%";
-          status.textContent = progress < 0.9 ? "Downloading NASA data… " + Math.round(progress * 100) + "%" : "Igniting engines…";
+          statusEl.textContent = progress < 0.9 ? "Downloading NASA data… " + Math.round(progress * 100) + "%" : "Igniting engines…";
         }).then(function (instance) {
           window.unityInstance = instance;
           // the loader resets the module's pixel ratio to 1 (blurry, upscaled text): set it again, and on resize
