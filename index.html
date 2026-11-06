@@ -1,40 +1,80 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Star Nova</title>
-  <meta name="description" content="Star Nova: a 3D space action game set in real NASA star systems. Defend Earth from the Klin'Tar Empire as the living weapon Nova.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='92' fill='%23060f1c' stroke='%234ef2ff' stroke-width='8'/%3E%3Cellipse cx='100' cy='100' rx='92' ry='30' fill='none' stroke='%23ffb43c' stroke-width='9' transform='rotate(-24 100 100)'/%3E%3Cpath d='M100 14 C105 82 118 95 186 100 C118 105 105 118 100 186 C95 118 82 105 14 100 C82 95 95 82 100 14 Z' fill='%23dffcff'/%3E%3C/svg%3E">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-    }
-  }
-  </script>
-</head>
-<body>
-  <canvas id="game"></canvas>
-  <canvas id="cine"></canvas>
-  <div id="ui"></div>
-  <div id="boot">
-    <div class="boot-title">STAR NOVA</div>
-    <div class="boot-sub">LOADING SYSTEMS…</div>
-    <div class="boot-err" id="boot-err"></div>
-  </div>
-  <script>
-    window.addEventListener('error', function (e) {
-      var el = document.getElementById('boot-err');
-      if (el) el.textContent = 'Error: ' + (e.message || e.error);
-      console.error(e.error || e.message);
-    });
-  </script>
-  <script type="module" src="src/main.js"></script>
-</body>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
+    <title>Star Nova</title>
+    <meta name="description" content="Star Nova — a NASA open data adventure by team MarsBase. Every star system in the game is real.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='92' fill='%23060f1c' stroke='%234ef2ff' stroke-width='8'/%3E%3Cellipse cx='100' cy='100' rx='92' ry='30' fill='none' stroke='%23ffb43c' stroke-width='9' transform='rotate(-24 100 100)'/%3E%3Cpath d='M100 14 C105 82 118 95 186 100 C118 105 105 118 100 186 C95 118 82 105 14 100 C82 95 95 82 100 14 Z' fill='%23dffcff'/%3E%3C/svg%3E">
+    <style>
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+      #unity-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; background: #000; outline: none; }
+      #sn-loader {
+        position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+        background: radial-gradient(ellipse at 50% 60%, #0b1b2e 0%, #02060c 55%, #000 100%);
+        color: #8fdcff; font: 600 13px/1.4 "Segoe UI", system-ui, sans-serif; letter-spacing: 0.32em; text-transform: uppercase;
+        transition: opacity 0.6s ease;
+      }
+      #sn-loader h1 { margin: 0; color: #fff; font: 200 clamp(34px, 6vw, 64px)/1 "Segoe UI", system-ui, sans-serif; letter-spacing: 0.28em; }
+      #sn-loader .sub { color: #ffcf6a; letter-spacing: 0.3em; }
+      #sn-bar { width: min(440px, 70vw); height: 3px; background: #10283c; overflow: hidden; }
+      #sn-fill { width: 0; height: 100%; background: linear-gradient(90deg, #4ef2ff, #ffd27a); transition: width 0.25s ease; }
+      #sn-status { color: #6f9fbf; font-size: 11px; letter-spacing: 0.2em; min-height: 1.4em; }
+      #sn-error { display: none; max-width: 640px; padding: 0 24px; color: #ffb4a8; text-transform: none; letter-spacing: 0.02em; font-weight: 400; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="sn-loader">
+      <h1>STAR NOVA</h1>
+      <div class="sub">A NASA open data adventure</div>
+      <div id="sn-bar"><div id="sn-fill"></div></div>
+      <div id="sn-status">Charting star systems…</div>
+      <div id="sn-error"></div>
+    </div>
+    <script>
+      var canvas = document.querySelector("#unity-canvas");
+      var loader = document.querySelector("#sn-loader");
+      var fill = document.querySelector("#sn-fill");
+      var status = document.querySelector("#sn-status");
+      function fail(message) {
+        var e = document.querySelector("#sn-error");
+        e.textContent = message; e.style.display = "block";
+        status.textContent = "";
+      }
+      var config = {
+        arguments: [],
+        dataUrl: "Build/WebGL.data.unityweb",
+        frameworkUrl: "Build/WebGL.framework.js.unityweb",
+        codeUrl: "Build/WebGL.wasm.unityweb",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "MarsBase",
+        productName: "Star Nova",
+        productVersion: "0.1.0",
+        autoSyncPersistentDataPath: true,
+        // render at the screen's real pixel density (capped at 2x) so text stays sharp on high-DPI screens
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        showBanner: function (msg, type) { if (type === "error") fail(msg); },
+      };
+      var script = document.createElement("script");
+      script.src = "Build/WebGL.loader.js";
+      script.onload = function () {
+        createUnityInstance(canvas, config, function (progress) {
+          fill.style.width = (100 * progress) + "%";
+          status.textContent = progress < 0.9 ? "Downloading NASA data… " + Math.round(progress * 100) + "%" : "Igniting engines…";
+        }).then(function (instance) {
+          window.unityInstance = instance;
+          // the loader resets the module's pixel ratio to 1 (blurry, upscaled text): set it again, and on resize
+          // (dragging the window to another monitor changes the ratio)
+          var sharp = function () { instance.Module.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 2); };
+          sharp(); window.addEventListener("resize", sharp);
+          loader.style.opacity = "0";
+          setTimeout(function () { loader.remove(); }, 650);
+          canvas.focus();
+        }).catch(fail);
+      };
+      script.onerror = function () { fail("The game files could not be loaded. Please reload the page."); };
+      document.body.appendChild(script);
+    </script>
+  </body>
 </html>
