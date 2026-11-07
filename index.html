@@ -1,80 +1,195 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
-    <title>Star Nova</title>
-    <meta name="description" content="Star Nova — a NASA open data adventure by team MarsBase. Every star system in the game is real.">
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='92' fill='%23060f1c' stroke='%234ef2ff' stroke-width='8'/%3E%3Cellipse cx='100' cy='100' rx='92' ry='30' fill='none' stroke='%23ffb43c' stroke-width='9' transform='rotate(-24 100 100)'/%3E%3Cpath d='M100 14 C105 82 118 95 186 100 C118 105 105 118 100 186 C95 118 82 105 14 100 C82 95 95 82 100 14 Z' fill='%23dffcff'/%3E%3C/svg%3E">
-    <style>
-      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
-      #unity-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; background: #000; outline: none; }
-      #sn-loader {
-        position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
-        background: radial-gradient(ellipse at 50% 60%, #0b1b2e 0%, #02060c 55%, #000 100%);
-        color: #8fdcff; font: 600 13px/1.4 "Segoe UI", system-ui, sans-serif; letter-spacing: 0.32em; text-transform: uppercase;
-        transition: opacity 0.6s ease;
-      }
-      #sn-loader h1 { margin: 0; color: #fff; font: 200 clamp(34px, 6vw, 64px)/1 "Segoe UI", system-ui, sans-serif; letter-spacing: 0.28em; }
-      #sn-loader .sub { color: #ffcf6a; letter-spacing: 0.3em; }
-      #sn-bar { width: min(440px, 70vw); height: 3px; background: #10283c; overflow: hidden; }
-      #sn-fill { width: 0; height: 100%; background: linear-gradient(90deg, #4ef2ff, #ffd27a); transition: width 0.25s ease; }
-      #sn-status { color: #6f9fbf; font-size: 11px; letter-spacing: 0.2em; min-height: 1.4em; }
-      #sn-error { display: none; max-width: 640px; padding: 0 24px; color: #ffb4a8; text-transform: none; letter-spacing: 0.02em; font-weight: 400; text-align: center; }
-    </style>
-  </head>
-  <body>
-    <canvas id="unity-canvas" tabindex="-1"></canvas>
-    <div id="sn-loader">
-      <h1>STAR NOVA</h1>
-      <div class="sub">A NASA open data adventure</div>
-      <div id="sn-bar"><div id="sn-fill"></div></div>
-      <div id="sn-status">Charting star systems…</div>
-      <div id="sn-error"></div>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Star Nova — download for Windows</title>
+  <meta name="description" content="Star Nova: a 3D space-action game for Windows set in real NASA star systems, made in Unity 6 by team MarsBase for the NASA Space Apps Challenge.">
+  <meta property="og:title" content="Star Nova — a NASA open data adventure">
+  <meta property="og:description" content="Defend Earth from the Klin'Tar Empire across five real star systems. Free download for Windows.">
+  <meta property="og:image" content="screenshots/title.jpg">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='92' fill='%23060f1c' stroke='%234ef2ff' stroke-width='8'/%3E%3Cellipse cx='100' cy='100' rx='92' ry='30' fill='none' stroke='%23ffb43c' stroke-width='9' transform='rotate(-24 100 100)'/%3E%3Cpath d='M100 14 C105 82 118 95 186 100 C118 105 105 118 100 186 C95 118 82 105 14 100 C82 95 95 82 100 14 Z' fill='%23dffcff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #03070d; --panel: #0a1626; --line: #17324a; --text: #dbe9f5; --muted: #8aa5bd;
+      --cyan: #4ef2ff; --gold: #ffcf6a;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 500 18px/1.55 "Rajdhani", "Segoe UI", system-ui, sans-serif;
+    }
+    a { color: var(--cyan); }
+    img { display: block; max-width: 100%; height: auto; }
+    .wrap { width: min(1120px, 100% - 32px); margin: 0 auto; }
+    h1, h2, h3 { font-family: "Orbitron", "Segoe UI", sans-serif; font-weight: 700; letter-spacing: .06em; margin: 0; }
+    h2 { font-size: clamp(22px, 3vw, 30px); margin-bottom: 18px; }
+    h3 { font-size: 16px; color: #fff; }
+    .eyebrow { color: var(--gold); font-weight: 700; letter-spacing: .28em; text-transform: uppercase; font-size: 14px; }
+
+    .hero { border-bottom: 1px solid var(--line); background: radial-gradient(ellipse at 70% 0%, #0d2440 0%, transparent 60%), var(--bg); }
+    .hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 40px; align-items: center; padding: 56px 0 64px; }
+    .brand { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+    .brand svg { width: 64px; height: 64px; flex: none; }
+    .brand h1 { font-size: clamp(30px, 4.2vw, 50px); font-weight: 500; letter-spacing: .1em; color: #fff; line-height: 1; white-space: nowrap; }
+    .lead { font-size: 21px; margin: 14px 0 26px; }
+    .download { display: inline-flex; flex-direction: column; gap: 2px; padding: 16px 28px; border-radius: 4px;
+      background: var(--cyan); color: #021018; text-decoration: none; font-family: "Orbitron", sans-serif; font-weight: 700;
+      letter-spacing: .08em; box-shadow: 0 0 32px rgba(78, 242, 255, .25); transition: transform .15s, box-shadow .15s; }
+    .download:hover { transform: translateY(-2px); box-shadow: 0 0 44px rgba(78, 242, 255, .4); }
+    .download small { font: 600 14px "Rajdhani", sans-serif; letter-spacing: .04em; opacity: .8; }
+    .sub-links { margin-top: 14px; font-size: 16px; color: var(--muted); }
+    .shot { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #000; }
+    .shot img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+
+    section { padding: 64px 0; border-bottom: 1px solid var(--line); }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+    .steps { counter-reset: step; list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+    .steps li { counter-increment: step; position: relative; padding: 14px 16px 14px 60px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+    .steps li::before { content: counter(step); position: absolute; left: 16px; top: 12px; width: 30px; height: 30px; border-radius: 50%;
+      display: grid; place-items: center; font: 700 15px "Orbitron", sans-serif; color: #021018; background: var(--gold); }
+    .note { color: var(--muted); font-size: 16px; }
+
+    .systems { display: grid; gap: 22px; }
+    .system { display: grid; grid-template-columns: 1fr 1.1fr; gap: 26px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .system .txt { padding: 22px 26px; }
+    .system .lvl { color: var(--cyan); font: 700 13px "Orbitron", sans-serif; letter-spacing: .18em; }
+    .system h3 { font-size: 20px; margin: 6px 0 8px; }
+    .system p { margin: 0; }
+    .system img { width: 100%; height: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+    .system.no-img { grid-template-columns: 1fr; }
+
+    .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .gallery figure { margin: 0; }
+    .gallery img { border-radius: 4px; }
+    .gallery figcaption { color: var(--muted); font-size: 15px; margin-top: 6px; }
+
+    .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .keys div { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; }
+    .keys p { margin: 8px 0 0; }
+    kbd { font: 600 14px "Rajdhani", sans-serif; border: 1px solid #2b5170; border-bottom-width: 2px; border-radius: 3px; padding: 0 6px; color: #fff; background: #0e2236; }
+    ul.plain { margin: 0; padding-left: 20px; }
+    footer { padding: 36px 0 48px; color: var(--muted); font-size: 16px; }
+
+    @media (max-width: 860px) {
+      .hero .wrap, .two, .system, .keys { grid-template-columns: 1fr; }
+      .gallery { grid-template-columns: 1fr 1fr; }
+      .system img { order: -1; }
+    }
+    @media (max-width: 520px) { .gallery { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <div>
+        <div class="brand">
+          <svg viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="92" fill="#060f1c" stroke="#4ef2ff" stroke-width="8"/><ellipse cx="100" cy="100" rx="92" ry="30" fill="none" stroke="#ffb43c" stroke-width="9" transform="rotate(-24 100 100)"/><path d="M100 14 C105 82 118 95 186 100 C118 105 105 118 100 186 C95 118 82 105 14 100 C82 95 95 82 100 14 Z" fill="#dffcff"/></svg>
+          <h1>STAR NOVA</h1>
+        </div>
+        <div class="eyebrow">A NASA open data adventure · team MarsBase</div>
+        <p class="lead">A 3D space-action game set in five <strong>real star systems from NASA open data</strong>. Fly, land and fight as Nova, the living weapon built to free the worlds taken by the Klin'Tar Empire.</p>
+        <a class="download" href="https://github.com/m1ller750/star-nova/releases/download/v1.0.0/StarNova-Setup-1.0.0.exe">
+          DOWNLOAD FOR WINDOWS
+          <small>Star Nova 1.0.0 · installer, 192 MB · Windows 10/11 64-bit</small>
+        </a>
+        <div class="sub-links">Free · no account needed · <a href="https://github.com/m1ller750/star-nova/releases">all releases</a> · <a href="https://github.com/m1ller750/star-nova">GitHub</a></div>
+      </div>
+      <div class="shot"><img src="screenshots/title.jpg" alt="Star Nova title screen: Earth's night side lit by city lights at sunrise, the NOVA-1 starfighter in orbit" width="1280" height="720"></div>
     </div>
-    <script>
-      var canvas = document.querySelector("#unity-canvas");
-      var loader = document.querySelector("#sn-loader");
-      var fill = document.querySelector("#sn-fill");
-      var statusEl = document.querySelector("#sn-status");
-      function fail(message) {
-        var e = document.querySelector("#sn-error");
-        e.textContent = message; e.style.display = "block";
-        statusEl.textContent = "";
-      }
-      var config = {
-        arguments: [],
-        dataUrl: "Build/WebGL.data.unityweb",
-        frameworkUrl: "Build/WebGL.framework.js.unityweb",
-        codeUrl: "Build/WebGL.wasm.unityweb",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "MarsBase",
-        productName: "Star Nova",
-        productVersion: "0.1.0",
-        autoSyncPersistentDataPath: true,
-        // render at the screen's real pixel density (capped at 2x) so text stays sharp on high-DPI screens
-        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
-        showBanner: function (msg, type) { if (type === "error") fail(msg); },
-      };
-      var script = document.createElement("script");
-      script.src = "Build/WebGL.loader.js";
-      script.onload = function () {
-        createUnityInstance(canvas, config, function (progress) {
-          fill.style.width = (100 * progress) + "%";
-          statusEl.textContent = progress < 0.9 ? "Downloading NASA data… " + Math.round(progress * 100) + "%" : "Igniting engines…";
-        }).then(function (instance) {
-          window.unityInstance = instance;
-          // the loader resets the module's pixel ratio to 1 (blurry, upscaled text): set it again, and on resize
-          // (dragging the window to another monitor changes the ratio)
-          var sharp = function () { instance.Module.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 2); };
-          sharp(); window.addEventListener("resize", sharp);
-          loader.style.opacity = "0";
-          setTimeout(function () { loader.remove(); }, 650);
-          canvas.focus();
-        }).catch(fail);
-      };
-      script.onerror = function () { fail("The game files could not be loaded. Please reload the page."); };
-      document.body.appendChild(script);
-    </script>
-  </body>
+  </header>
+
+  <main>
+    <section id="install">
+      <div class="wrap two">
+        <div>
+          <h2>Install in a minute</h2>
+          <ol class="steps">
+            <li><strong>Download</strong> <code>StarNova-Setup-1.0.0.exe</code> with the button above.</li>
+            <li><strong>Run it.</strong> Setup installs for your user only, so no administrator rights are needed. If Windows SmartScreen says "Windows protected your PC", click <em>More info</em> → <em>Run anyway</em>: the installer is not code-signed yet.</li>
+            <li><strong>Play</strong> from the Start menu or the desktop shortcut. Headphones recommended: every line of the story is voiced.</li>
+          </ol>
+          <p class="note">Remove it any time from Windows Settings → Apps → Star Nova. Your saved progress stays.</p>
+        </div>
+        <div>
+          <h2>System requirements</h2>
+          <ul class="plain">
+            <li>Windows 10 or 11, 64-bit</li>
+            <li>A DirectX 12 graphics card (tested on an NVIDIA GeForce GTX 1650)</li>
+            <li>8 GB RAM, 300 MB of disk space</li>
+            <li>Keyboard and mouse</li>
+          </ul>
+          <p class="note">Built with Unity 6 and the Universal Render Pipeline: soft shadows, ambient occlusion, HDR bloom, photo-scanned materials and real NASA imagery of the planets.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="story">
+      <div class="wrap">
+        <h2>The story</h2>
+        <p>In the year 2300 the Klin'Tar Empire began conquering every inhabited world of the Milky Way. In 2500 it reached Earth: it drained Mars, seized Mercury and Venus, and turned its dreadnoughts toward the home world. Humanity answered with a living weapon, <strong>Nova</strong>. Five star systems stand between Nova and the master of the Klin'Tar, and the last one holds a secret that reads exactly like Nova.</p>
+      </div>
+    </section>
+
+    <section id="systems">
+      <div class="wrap">
+        <h2>Five real star systems</h2>
+        <p class="note">Every star, planet and black hole comes from NASA data: the NASA Exoplanet Archive, the NASA Planetary Fact Sheet and NASA Chandra. Only the comets are invented.</p>
+        <div class="systems">
+          <article class="system">
+            <div class="txt"><div class="lvl">LEVEL 1</div><h3>Solar System</h3><p>Dog-fight above Earth, then land on Mercury, Venus and Mars to liberate them. Earth, the Moon, Mercury, Mars and the gas giants wear real NASA imagery: Blue Marble, MESSENGER, Clementine and Viking.</p></div>
+            <img src="screenshots/earth.jpg" alt="Level 1: the NOVA-1 starfighter above Earth, rendered from NASA Blue Marble imagery" loading="lazy">
+          </article>
+          <article class="system no-img">
+            <div class="txt"><div class="lvl">LEVEL 2</div><h3>Kepler-90</h3><p>An eight-planet system 2,545 light-years away. Board the Klin'Tar colonizer ring, free the hostages before a five-minute fusion charge goes off, and visit the Keplerian home world.</p></div>
+          </article>
+          <article class="system no-img">
+            <div class="txt"><div class="lvl">LEVEL 3</div><h3>TRAPPIST-1</h3><p>Seven Earth-sized worlds around an ultracool dwarf. Storm three fortresses, fly on foot in open space, and stop a public execution in the bazaar city of TRAPPIST-1 e.</p></div>
+          </article>
+          <article class="system">
+            <div class="txt"><div class="lvl">LEVEL 4</div><h3>Cygnus X-1</h3><p>The first black hole ever confirmed: 21 solar masses feeding on the blue supergiant HDE 226868. It's a trap. Eject before the missile hits and fight the void creatures in your suit.</p></div>
+            <img src="screenshots/black-hole.jpg" alt="Level 4: the black hole Cygnus X-1 with its accretion disk, Einstein ring and relativistic jet" loading="lazy">
+          </article>
+          <article class="system">
+            <div class="txt"><div class="lvl">LEVEL 5</div><h3>HR 8799</h3><p>Four directly imaged super-Jupiters. Hurl comets into dreadnoughts, break the Shadow Guard and face the master of the Klin'Tar on the throne world.</p></div>
+            <img src="screenshots/hr8799.jpg" alt="Level 5: Nova arrives in the HR 8799 system" loading="lazy">
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="gallery">
+      <div class="wrap">
+        <h2>On the ground</h2>
+        <div class="gallery">
+          <figure><img src="screenshots/mars.jpg" alt="Nova in the canyons of Mars" loading="lazy"><figcaption>Mars: canyon walls and dust storms</figcaption></figure>
+          <figure><img src="screenshots/mars-rocks.jpg" alt="Photo-scanned boulders on the Martian surface" loading="lazy"><figcaption>Photo-scanned rocks and ground</figcaption></figure>
+          <figure><img src="screenshots/moon.jpg" alt="Nova on the Moon with Earth in the sky" loading="lazy"><figcaption>The Moon, with Earth overhead</figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="controls">
+      <div class="wrap">
+        <h2>Controls</h2>
+        <div class="keys">
+          <div><h3>Starship</h3><p>Mouse aim · <kbd>W</kbd>/<kbd>S</kbd> throttle · <kbd>A</kbd>/<kbd>D</kbd> roll · <kbd>Shift</kbd> boost · left mouse cannons · right mouse rockets · <kbd>Q</kbd> shield · <kbd>F</kbd> laser · <kbd>X</kbd> eject · <kbd>E</kbd> land · <kbd>J</kbd> light-speed jump</p></div>
+          <div><h3>On foot and flying</h3><p><kbd>WASD</kbd> move · <kbd>Space</kbd> jump (again in the air to fly) · <kbd>C</kbd> crouch · <kbd>Shift</kbd> sprint · <kbd>1</kbd>–<kbd>5</kbd> weapons · mouse attack / aim · <kbd>F</kbd> melee and silent takedown · <kbd>R</kbd> missiles · <kbd>Q</kbd> eye lasers · <kbd>G</kbd> smoke · <kbd>E</kbd> interact · <kbd>V</kbd> first / third person · <kbd>Esc</kbd> pause</p></div>
+        </div>
+        <p class="note">Every level is open from the start: choose <strong>SELECT LEVEL</strong> on the title screen or in the pause menu.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p><strong>Star Nova</strong> by team MarsBase, made for the NASA Space Apps Challenge with Unity 6.</p>
+      <p>Data: NASA Exoplanet Archive, NASA Planetary Fact Sheet, NASA Chandra. Planet imagery: NASA (Blue Marble, Earth at Night, MESSENGER, Clementine, NASA 3D Resources). Textures and rock scans: Poly Haven and ambientCG (CC0). Fonts: Orbitron and Rajdhani (SIL Open Font License).</p>
+    </div>
+  </footer>
+</body>
 </html>
