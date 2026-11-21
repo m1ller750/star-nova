@@ -5,8 +5,14 @@ In 2300 the Klin'Tar Empire began conquering every inhabited world of the Milky 
 
 ![Star Nova title screen](screenshots/title.jpg)
 
-## Download
-**[StarNova-Setup-1.0.0.exe](https://github.com/m1ller750/star-nova/releases/download/v1.0.0/StarNova-Setup-1.0.0.exe)** (192 MB, Windows 10/11 64-bit) · [all releases](https://github.com/m1ller750/star-nova/releases) · [game page](https://m1ller750.github.io/star-nova/)
+## Download and play
+**[Download StarNova-Setup-1.0.0.exe](https://github.com/m1ller750/star-nova/releases/download/v1.0.0/StarNova-Setup-1.0.0.exe)** (192 MB, Windows 10/11 64-bit) · [all releases](https://github.com/m1ller750/star-nova/releases) · [game page](https://m1ller750.github.io/star-nova/)
+
+1. Run the installer. It installs for your user only, so no administrator rights are needed. If Windows SmartScreen says "Windows protected your PC", click **More info → Run anyway** (the installer is not code-signed yet).
+2. Start **Star Nova** from the Start menu or the desktop shortcut. Headphones recommended — the story is fully voiced.
+3. To remove it: Windows Settings → Apps → Star Nova. Saved progress is kept.
+
+Silent install for labs and judging machines: `StarNova-Setup-1.0.0.exe /silent [/dir="C:\Games\Star Nova"] [/desktop]`.
 
 **Requirements:** Windows 10/11 64-bit, a DirectX 12 graphics card (tested on a GeForce GTX 1650), 8 GB RAM, 300 MB of disk space, keyboard and mouse.
 
